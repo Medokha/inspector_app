@@ -17,6 +17,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _textAnimation;
 
   @override
   void initState() {
@@ -29,7 +30,11 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.outBack)),
+      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack)),
+    );
+
+    _textAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 1.0, curve: Curves.easeIn)),
     );
 
     _controller.forward();
@@ -75,7 +80,19 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   scale: _scaleAnimation.value,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    chOpacity(
+                        opacity: _textAnimation.value,
+                        child: Text(
+                          'ديوان الوقف السني',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontFamily: 'Amiri',
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ildren: [
                       Hero(
                         tag: 'app_logo',
                         child: Container(

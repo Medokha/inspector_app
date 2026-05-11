@@ -108,6 +108,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          Text(
+                            'ديوان الوقف السني',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontFamily: 'Amiri',
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
                           Hero(
                             tag: 'app_logo',
                             child: Image.asset(

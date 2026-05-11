@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+class AppTheme {
   // Colors sampled and inspired by the provided logo (Teal/Green/Red/Black/Gold)
   static const Color primaryTeal = Color(0xFF009688);
   static const Color accentGreen = Color(0xFF4CAF50);
@@ -41,7 +42,7 @@ import 'package:flutter/material.dart';
         elevation: 0,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
@@ -82,7 +83,7 @@ import 'package:flutter/material.dart';
         elevation: 0,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
