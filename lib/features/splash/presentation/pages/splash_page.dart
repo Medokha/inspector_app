@@ -80,7 +80,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   scale: _scaleAnimation.value,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    chOpacity(
+                    children: [
+                      Opacity(
                         opacity: _textAnimation.value,
                         child: Text(
                           'ديوان الوقف السني',
@@ -92,7 +93,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ildren: [
                       Hero(
                         tag: 'app_logo',
                         child: Container(
