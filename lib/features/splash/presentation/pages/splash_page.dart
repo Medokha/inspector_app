@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/localization/app_localizations.dart';
-import 'package:inspector_app/features/counter/presentation/pages/counter_page.dart';
+import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -21,7 +21,7 @@ class _SplashPageState extends State<SplashPage> {
     _timer = Timer(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const CounterPage()),
+        MaterialPageRoute<void>(builder: (_) => const LoginPage()),
       );
     });
   }

@@ -27,6 +27,12 @@ class AppLocalizations {
       'counterHint': 'You have pushed the button this many times:',
       'increment': 'Increment',
       'splashLoading': 'Loading…',
+      'loginTitle': 'Login',
+      'email': 'Email',
+      'password': 'Password',
+      'loginButton': 'Login',
+      'loginFailed': 'Login failed',
+      'loginFillAllFields': 'Please fill all fields',
     },
     'ar': <String, String>{
       'appTitle': 'تطبيق المفتش',
@@ -34,6 +40,12 @@ class AppLocalizations {
       'counterHint': 'لقد ضغطت على الزر هذا العدد من المرات:',
       'increment': 'زيادة',
       'splashLoading': 'جارٍ التحميل…',
+      'loginTitle': 'تسجيل الدخول',
+      'email': 'البريد الإلكتروني',
+      'password': 'كلمة المرور',
+      'loginButton': 'دخول',
+      'loginFailed': 'فشل تسجيل الدخول',
+      'loginFillAllFields': 'من فضلك أدخل جميع البيانات',
     },
   };
 
@@ -48,6 +60,13 @@ class AppLocalizations {
   String get counterHint => _t('counterHint');
   String get increment => _t('increment');
   String get splashLoading => _t('splashLoading');
+
+  String get loginTitle => _t('loginTitle');
+  String get email => _t('email');
+  String get password => _t('password');
+  String get loginButton => _t('loginButton');
+  String get loginFailed => _t('loginFailed');
+  String get loginFillAllFields => _t('loginFillAllFields');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
