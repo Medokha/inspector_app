@@ -4,7 +4,7 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/features/auth/presentation/controller/login_controller.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
-import 'package:inspector_app/features/counter/presentation/pages/counter_page.dart';
+import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     if (!mounted) return;
 
     if (result.isSuccess) {
-      Navigator.of(context).pushReplacement(FadePageRoute(child: const CounterPage()));
+      Navigator.of(context).pushReplacement(FadePageRoute(child: const MainShellPage()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
