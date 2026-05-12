@@ -111,7 +111,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           Text(
                             'ديوان الوقف السني',
                             style: theme.textTheme.headlineSmall?.copyWith(
-                              fontFamily: 'Amiri',
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.primary,
                             ),
@@ -129,15 +128,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             ),
                           ),
                           const SizedBox(height: 48),
-                          Text(
-                            strings.loginTitle,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 32),
+
                           TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,

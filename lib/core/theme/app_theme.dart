@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors sampled and inspired by the provided logo (Teal/Green/Red/Black/Gold)
@@ -10,6 +11,7 @@ class AppTheme {
 
   static final ThemeData light = ThemeData(
     useMaterial3: true,
+    fontFamily: GoogleFonts.amiri().fontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: primaryTeal,
       primary: primaryTeal,
@@ -18,6 +20,7 @@ class AppTheme {
       error: warningRed,
       brightness: Brightness.light,
     ),
+    textTheme: GoogleFonts.amiriTextTheme(),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.grey[50],
@@ -51,6 +54,7 @@ class AppTheme {
 
   static final ThemeData dark = ThemeData(
     useMaterial3: true,
+    fontFamily: GoogleFonts.amiri().fontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: primaryTeal,
       primary: primaryTeal,
@@ -59,6 +63,7 @@ class AppTheme {
       error: warningRed,
       brightness: Brightness.dark,
     ),
+    textTheme: GoogleFonts.amiriTextTheme(ThemeData.dark().textTheme),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: const Color(0xFF1E1E1E),

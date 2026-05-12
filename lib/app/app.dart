@@ -18,6 +18,7 @@ class App extends StatelessWidget {
     final home = homeOverride ?? (showSplash ? const SplashPage() : const LoginPage());
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
         AppLocalizations.delegate,

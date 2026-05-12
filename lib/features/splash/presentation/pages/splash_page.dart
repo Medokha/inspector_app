@@ -86,7 +86,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         child: Text(
                           'ديوان الوقف السني',
                           style: theme.textTheme.headlineMedium?.copyWith(
-                            fontFamily: 'Amiri',
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
                           ),
@@ -119,15 +118,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         ),
                       ),
                       const SizedBox(height: 32),
-                      Text(
-                        strings.appTitle,
-                        style: theme.textTheme.headlineLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+
                       const SizedBox(
                         width: 40,
                         height: 40,
