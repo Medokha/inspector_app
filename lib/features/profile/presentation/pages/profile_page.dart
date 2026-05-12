@@ -63,72 +63,137 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildBody(BuildContext context, ProfileOverview overview) {
     final theme = Theme.of(context);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: <Widget>[
-        Center(
-          child: Column(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 38,
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                child: Text(
-                  overview.profile.initials,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          // Profile Header with Gradient
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.8),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child: Text(
+                        overview.profile.initials,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    overview.profile.name,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 16, color: Colors.white.withOpacity(0.7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        overview.profile.region,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: overview.profile.tags
+                        .map((tag) => _TagChip(label: tag))
+                        .toList(),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                overview.profile.name,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                overview.profile.region,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: overview.profile.tags
-                    .map((tag) => _TagChip(label: tag))
-                    .toList(),
-              ),
-            ],
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Text('إحصائيات الأداء - مايو ٢٠٢٦', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
-        Row(
-          children: <Widget>[
-            Expanded(child: _StatMiniCard(label: 'مكتملة', value: overview.stats.completed.toString())),
-            const SizedBox(width: 8),
-            Expanded(child: _StatMiniCard(label: 'معلقة', value: overview.stats.pending.toString())),
-            const SizedBox(width: 8),
-            Expanded(child: _StatMiniCard(label: 'مرفوضة', value: overview.stats.rejected.toString())),
-            const SizedBox(width: 8),
-            Expanded(child: _StatMiniCard(label: 'متأخرة', value: overview.stats.late.toString())),
-          ],
-        ),
-        const SizedBox(height: 16),
-        for (final metric in overview.metrics) ...<Widget>[
-          _MetricRow(label: metric.label, value: metric.value),
-          const SizedBox(height: 8),
+          
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'إحصائيات الأداء - مايو ٢٠٢٦',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: <Widget>[
+                    Expanded(child: _StatMiniCard(label: 'مكتملة', value: overview.stats.completed.toString(), color: const Color(0xFF2E7D32))),
+                    const SizedBox(width: 12),
+                    Expanded(child: _StatMiniCard(label: 'معلقة', value: overview.stats.pending.toString(), color: const Color(0xFFF57C00))),
+                    const SizedBox(width: 12),
+                    Expanded(child: _StatMiniCard(label: 'مرفوضة', value: overview.stats.rejected.toString(), color: theme.colorScheme.error)),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                
+                for (final metric in overview.metrics) ...<Widget>[
+                  _MetricRow(label: metric.label, value: metric.value),
+                  const SizedBox(height: 20),
+                ],
+                
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'آخر التقارير',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text('عرض الكل'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                for (final report in overview.recentReports) ...<Widget>[
+                  _ReportTile(item: report),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ),
+          ),
         ],
-        const SizedBox(height: 12),
-        Text('آخر تقارير', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
-        for (final report in overview.recentReports) ...<Widget>[
-          _ReportTile(item: report),
-          const SizedBox(height: 8),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -141,45 +206,57 @@ class _TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 }
 
 class _StatMiniCard extends StatelessWidget {
-  const _StatMiniCard({required this.label, required this.value});
+  const _StatMiniCard({required this.label, required this.value, required this.color});
 
   final String label;
   final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: <Widget>[
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: <Widget>[
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -195,19 +272,33 @@ class _MetricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            Expanded(child: Text(label, style: theme.textTheme.bodySmall)),
-            Text('$value%'),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+            Text(
+              '$value%',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(
-          value: value / 100,
-          color: theme.colorScheme.primary,
-          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: value / 100,
+            minHeight: 8,
+            color: theme.colorScheme.primary,
+            backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
+          ),
         ),
       ],
     );
@@ -224,35 +315,59 @@ class _ReportTile extends StatelessWidget {
     final theme = Theme.of(context);
     final status = _ReportStyle.fromStatus(item.status, theme);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(item.title, style: theme.textTheme.bodyMedium),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: status.color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              status.label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: status.color,
-                fontWeight: FontWeight.bold,
+    return Card(
+      child: InkWell(
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.description_outlined, color: theme.colorScheme.primary, size: 20),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.dateLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: status.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status.label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: status.color,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(item.dateLabel, style: theme.textTheme.bodySmall),
-        ],
+        ),
       ),
     );
   }

@@ -81,92 +81,139 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primary.withOpacity(0.08),
-              theme.colorScheme.surface,
-            ],
+      body: Stack(
+        children: [
+          // Background Decor
+          Positioned(
+            top: -100,
+            right: -100,
+            child: CircleAvatar(
+              radius: 150,
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.05),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: FadeTransition(
-                  opacity: _formAnimation,
-                  child: AnimatedBuilder(
-                    animation: _controller,
-                    builder: (context, child) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'ديوان الوقف السني',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
+          Positioned(
+            bottom: -50,
+            left: -50,
+            child: CircleAvatar(
+              radius: 100,
+              backgroundColor: theme.colorScheme.secondary.withOpacity(0.05),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: FadeTransition(
+                    opacity: _formAnimation,
+                    child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, child) {
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Hero(
+                              tag: 'app_logo',
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                height: 100,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(Icons.verified, size: 80, color: theme.colorScheme.primary);
+                                },
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          Hero(
-                            tag: 'app_logo',
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              height: 120,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(Icons.verified, size: 80, color: theme.colorScheme.primary);
-                              },
+                            const SizedBox(height: 24),
+                            Text(
+                              'ديوان الوقف السني',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: theme.colorScheme.primary,
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                          const SizedBox(height: 48),
-
-                          TextField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              labelText: strings.email,
-                              prefixIcon: const Icon(Icons.email_outlined),
+                            const SizedBox(height: 8),
+                            Text(
+                              strings.loginButton, // Or a generic "Welcome back"
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            onSubmitted: (_) => _submit(),
-                            decoration: InputDecoration(
-                              labelText: strings.password,
-                              prefixIcon: const Icon(Icons.lock_outline),
+                            const SizedBox(height: 40),
+                            
+                            Card(
+                              elevation: 0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  children: [
+                                    TextField(
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      decoration: InputDecoration(
+                                        labelText: strings.email,
+                                        prefixIcon: const Icon(Icons.person_outline),
+                                        hintText: 'user@example.com',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _passwordController,
+                                      obscureText: true,
+                                      onSubmitted: (_) => _submit(),
+                                      decoration: InputDecoration(
+                                        labelText: strings.password,
+                                        prefixIcon: const Icon(Icons.lock_open_outlined),
+                                        hintText: '••••••••',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 32),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: FilledButton(
+                                        onPressed: _controller.isLoading ? null : _submit,
+                                        child: _controller.isLoading
+                                            ? const SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : Text(strings.loginButton),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: _controller.isLoading ? null : _submit,
-                            child: _controller.isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
-                                : Text(strings.loginButton),
-                          ),
-                        ],
-                      );
-                    },
+                            const SizedBox(height: 24),
+                            TextButton(
+                              onPressed: () {}, // Forgot password placeholder
+                              child: Text(
+                                'نسيت كلمة المرور؟',
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary.withOpacity(0.7),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

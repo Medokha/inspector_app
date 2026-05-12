@@ -31,6 +31,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -40,35 +41,45 @@ class _NotificationsPageState extends State<NotificationsPage> {
           appBar: AppBar(
             title: const Text('الإشعارات'),
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: <Widget>[
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: <Widget>[
-                  _FilterChip(
-                    label: 'الكل',
-                    selected: _filter == null,
-                    onTap: () => setState(() => _filter = null),
+          body: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: <Widget>[
+                      _FilterChip(
+                        label: 'الكل',
+                        selected: _filter == null,
+                        onTap: () => setState(() => _filter = null),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'مهام',
+                        selected: _filter == NotificationType.task,
+                        onTap: () => setState(() => _filter = NotificationType.task),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'تقارير',
+                        selected: _filter == NotificationType.report,
+                        onTap: () => setState(() => _filter = NotificationType.report),
+                      ),
+                    ],
                   ),
-                  _FilterChip(
-                    label: 'مهام',
-                    selected: _filter == NotificationType.task,
-                    onTap: () => setState(() => _filter = NotificationType.task),
-                  ),
-                  _FilterChip(
-                    label: 'تقارير',
-                    selected: _filter == NotificationType.report,
-                    onTap: () => setState(() => _filter = NotificationType.report),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 16),
-              for (final item in items) ...<Widget>[
-                _NotificationTile(item: item),
-                const SizedBox(height: 12),
-              ],
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return _NotificationTile(item: items[index]);
+                  },
+                ),
+              ),
             ],
           ),
         );
@@ -91,23 +102,32 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      borderRadius: BorderRadius.circular(32),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary.withOpacity(0.15) : Colors.transparent,
-          border: Border.all(
-            color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor,
-          ),
-          borderRadius: BorderRadius.circular(24),
+          color: selected ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: selected ? Theme.of(context).colorScheme.primary : null,
-              ),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: selected ? Colors.white : theme.colorScheme.primary,
+            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -122,43 +142,75 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final indicatorColor = item.isUnread ? theme.colorScheme.error : theme.colorScheme.primary;
+    final isUnread = item.isUnread;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsetsDirectional.only(top: 6, end: 8),
-            decoration: BoxDecoration(color: indicatorColor, shape: BoxShape.circle),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  item.title,
-                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+    return Card(
+      child: InkWell(
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: (item.type == NotificationType.task ? theme.colorScheme.primary : theme.colorScheme.secondary).withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.timeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  ),
+                child: Icon(
+                  item.type == NotificationType.task ? Icons.assignment_outlined : Icons.description_outlined,
+                  color: item.type == NotificationType.task ? theme.colorScheme.primary : theme.colorScheme.secondary,
+                  size: 24,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: isUnread ? FontWeight.w900 : FontWeight.bold,
+                              color: isUnread ? theme.colorScheme.primary : null,
+                            ),
+                          ),
+                        ),
+                        if (isUnread)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                        const SizedBox(width: 4),
+                        Text(
+                          item.timeLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

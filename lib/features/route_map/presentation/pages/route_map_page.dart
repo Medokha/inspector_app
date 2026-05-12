@@ -29,6 +29,7 @@ class _RouteMapPageState extends State<RouteMapPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -39,29 +40,43 @@ class _RouteMapPageState extends State<RouteMapPage> {
           body: _controller.isLoading
               ? const Center(child: CircularProgressIndicator())
               : ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   children: <Widget>[
                     _MapPlaceholder(),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text(
                           'ترتيب الزيارات المقترح',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                        Text(
-                          '١',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '١', // Route ID or sequence
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     for (final stop in _controller.stops) ...<Widget>[
                       _RouteStopCard(stop: stop),
                       const SizedBox(height: 12),
                     ],
+                    const SizedBox(height: 24),
                     _RouteSummary(),
+                    const SizedBox(height: 32),
                   ],
                 ),
         );
@@ -73,13 +88,50 @@ class _RouteMapPageState extends State<RouteMapPage> {
 class _MapPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      height: 180,
+      height: 220,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/logo.png'), // Using logo as a pattern placeholder
+          opacity: 0.03,
+          repeat: ImageRepeat.repeat,
+          scale: 8,
+        ),
       ),
-      child: const Center(child: Text('خريطة المسار')),
+      child: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.map_outlined, size: 48, color: theme.colorScheme.primary.withOpacity(0.5)),
+                const SizedBox(height: 12),
+                Text(
+                  'خريطة المسار التفاعلية',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary.withOpacity(0.7),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.small(
+              onPressed: () {},
+              elevation: 2,
+              backgroundColor: theme.colorScheme.primary,
+              child: const Icon(Icons.my_location, color: Colors.white, size: 18),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -94,46 +146,66 @@ class _RouteStopCard extends StatelessWidget {
     final theme = Theme.of(context);
     final style = _RouteStopStyle.fromStatus(stop.status, theme);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: BorderDirectional(start: BorderSide(color: style.borderColor, width: 4)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: style.badgeColor.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Text('${stop.order}', style: theme.textTheme.bodySmall),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  stop.title,
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  stop.timeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
+                ],
+              ),
+              child: Text(
+                '${stop.order}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
-              ],
+              ),
             ),
-          ),
-          _StatusChip(label: style.label, color: style.badgeColor),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    stop.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                      const SizedBox(width: 4),
+                      Text(
+                        stop.timeLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _StatusChip(label: style.label, color: style.badgeColor),
+          ],
+        ),
       ),
     );
   }
@@ -150,14 +222,14 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
       ),
     );
@@ -167,22 +239,26 @@ class _StatusChip extends StatelessWidget {
 class _RouteSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.secondary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.2)),
       ),
       child: Row(
         children: <Widget>[
-          const Icon(Icons.check_circle, color: Color(0xFF2E7D32)),
-          const SizedBox(width: 8),
+          Icon(Icons.stars, color: theme.colorScheme.secondary),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'المسار يحسن توفير الوقت والمسافة',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF2E7D32),
-                  ),
+              'المسار يحسن توفير الوقت والمسافة بناءً على بيانات المرور الحالية',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.8),
+                fontWeight: FontWeight.w900,
+                height: 1.4,
+              ),
             ),
           ),
         ],

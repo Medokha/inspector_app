@@ -39,6 +39,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -48,76 +49,166 @@ class _HomePageState extends State<HomePage> {
         }
 
         if (_controller.error != null && overview == null) {
-          return Center(child: Text('تعذر تحميل البيانات'));
+          return const Center(child: Text('تعذر تحميل البيانات'));
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _HeaderSection(
-                name: overview?.inspectorName ?? 'المفتش',
-                region: overview?.region ?? 'المنطقة',
-                unreadCount: overview?.unreadNotifications ?? 0,
-                onOpenNotifications: widget.onOpenNotifications,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _StatCard(
-                      label: 'مهام اليوم',
-                      value: (overview?.totalToday ?? 0).toString(),
-                      color: Theme.of(context).colorScheme.primary,
+              // Header Section - Re-imagined for an eye-catching airy look
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.tertiary, // Using the lighter mint teal
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(48),
+                    bottomRight: Radius.circular(48),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.15),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
                     ),
+                  ],
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    children: [
+                      _HeaderSection(
+                        name: overview?.inspectorName ?? 'المفتش',
+                        region: overview?.region ?? 'المنطقة',
+                        unreadCount: overview?.unreadNotifications ?? 0,
+                        onOpenNotifications: widget.onOpenNotifications,
+                      ),
+                      const SizedBox(height: 40),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: _StatCard(
+                              label: 'مهام اليوم',
+                              value: (overview?.totalToday ?? 0).toString(),
+                              icon: Icons.calendar_month_rounded,
+                              color: theme.colorScheme.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: _StatCard(
+                              label: 'المُعادة',
+                              value: (overview?.returnedCount ?? 0).toString(),
+                              icon: Icons.assignment_return_rounded,
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      label: 'المُعادة',
-                      value: (overview?.returnedCount ?? 0).toString(),
-                      color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'المهام الجارية',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => widget.onNavigateToTab(1),
+                          child: Row(
+                            children: [
+                              Text('الكل', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
+                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: theme.colorScheme.primary),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'المهام الجارية',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              for (final task in overview?.activeTasks ?? <TaskEntity>[]) ...<Widget>[
-                _TaskCard(
-                  task: task,
-                  onTap: () => _openTaskDetails(task),
+                    const SizedBox(height: 16),
+                    if (overview?.activeTasks.isEmpty ?? true)
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.assignment_turned_in_outlined,
+                                size: 64,
+                                color: theme.colorScheme.primary.withOpacity(0.1),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'لا توجد مهام جارية',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      for (final task in overview?.activeTasks ?? <TaskEntity>[]) ...<Widget>[
+                        _TaskCard(
+                          task: task,
+                          onTap: () => _openTaskDetails(task),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    
+                    const SizedBox(height: 32),
+                    Text(
+                      'الإشعارات الأخيرة',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: overview?.recentNotifications.length ?? 0,
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          color: theme.colorScheme.onSurface.withOpacity(0.05),
+                        ),
+                        itemBuilder: (context, index) {
+                          final notification = overview!.recentNotifications[index];
+                          return _NotificationRow(
+                            title: notification.title,
+                            timeLabel: notification.timeLabel,
+                            isUnread: notification.isUnread,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-              ],
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: () => widget.onNavigateToTab(1),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('عرض كل المهام'),
-                ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'الإشعارات الأخيرة',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              for (final notification in overview?.recentNotifications ?? const [])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _NotificationRow(
-                    title: notification.title,
-                    timeLabel: notification.timeLabel,
-                    isUnread: notification.isUnread,
-                  ),
-                ),
             ],
           ),
         );
@@ -153,40 +244,79 @@ class _HeaderSection extends StatelessWidget {
 
     return Row(
       children: <Widget>[
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+          ),
+          child: CircleAvatar(
+            radius: 28,
+            backgroundColor: Colors.white.withOpacity(0.2),
+            child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
+          ),
+        ),
+        const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                name,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                region,
+                'مرحباً بك،',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
                 ),
               ),
             ],
           ),
         ),
         Stack(
-          children: <Widget>[
-            IconButton(
-              onPressed: onOpenNotifications,
-              icon: const Icon(Icons.notifications_outlined),
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: onOpenNotifications,
+                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
+              ),
             ),
             if (unreadCount > 0)
-              PositionedDirectional(
-                top: 10,
-                end: 10,
+              Positioned(
+                top: -2,
+                right: -2,
                 child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD32F2F),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondary,
                     shape: BoxShape.circle,
+                    border: Border.all(color: theme.colorScheme.primary, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '$unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
@@ -198,44 +328,61 @@ class _HeaderSection extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value, required this.color});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   final String label;
   final String value;
+  final IconData icon;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-        boxShadow: <BoxShadow>[
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+        boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 16),
           Text(
             value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 32,
             ),
           ),
-          const SizedBox(height: 4),
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: Colors.white.withOpacity(0.8),
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -255,63 +402,78 @@ class _TaskCard extends StatelessWidget {
     final theme = Theme.of(context);
     final style = _TaskStyle.fromStatus(task.status, theme);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: BorderDirectional(
-            start: BorderSide(color: style.borderColor, width: 4),
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                _StatusChip(label: style.label, color: style.labelColor),
-                const Spacer(),
-                Text(
-                  task.timeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  _StatusChip(label: style.label, color: style.labelColor),
+                  const Spacer(),
+                  Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                  const SizedBox(width: 4),
+                  Text(
+                    task.timeLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                task.title,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      task.location,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (task.rejectionReason != null) ...<Widget>[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.colorScheme.error.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: theme.colorScheme.error),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          task.rejectionReason!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              task.title,
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              task.location,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            if (task.rejectionReason != null) ...<Widget>[
-              const SizedBox(height: 8),
-              Text(
-                task.rejectionReason!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

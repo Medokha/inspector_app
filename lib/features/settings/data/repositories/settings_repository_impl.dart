@@ -7,6 +7,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
     reportApprovals: true,
     deadlineReminders: false,
     offlineMapsEnabled: true,
+    isDarkMode: false,
     storageUsedLabel: '٢٥٠ MB',
     appVersion: 'v2.1.0',
   );

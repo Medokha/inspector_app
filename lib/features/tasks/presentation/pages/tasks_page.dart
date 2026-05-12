@@ -32,55 +32,72 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final tasks = _filteredTasks(_controller.tasks);
 
         return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
             title: const Text('كل المهام'),
           ),
           body: _controller.isLoading && tasks.isEmpty
               ? const Center(child: CircularProgressIndicator())
-              : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: <Widget>[
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: <Widget>[
-                        _FilterChip(
-                          label: 'الكل',
-                          selected: _filter == null,
-                          onTap: () => setState(() => _filter = null),
+              : Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: <Widget>[
+                            _FilterChip(
+                              label: 'الكل',
+                              selected: _filter == null,
+                              onTap: () => setState(() => _filter = null),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: 'جارية',
+                              selected: _filter == TaskStatus.inProgress,
+                              onTap: () => setState(() => _filter = TaskStatus.inProgress),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: 'مُعادة',
+                              selected: _filter == TaskStatus.returned,
+                              onTap: () => setState(() => _filter = TaskStatus.returned),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: 'معلقة',
+                              selected: _filter == TaskStatus.pending,
+                              onTap: () => setState(() => _filter = TaskStatus.pending),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: 'منتهية',
+                              selected: _filter == TaskStatus.completed,
+                              onTap: () => setState(() => _filter = TaskStatus.completed),
+                            ),
+                          ],
                         ),
-                        _FilterChip(
-                          label: 'جارية',
-                          selected: _filter == TaskStatus.inProgress,
-                          onTap: () => setState(() => _filter = TaskStatus.inProgress),
-                        ),
-                        _FilterChip(
-                          label: 'مُعادة',
-                          selected: _filter == TaskStatus.returned,
-                          onTap: () => setState(() => _filter = TaskStatus.returned),
-                        ),
-                        _FilterChip(
-                          label: 'معلقة',
-                          selected: _filter == TaskStatus.pending,
-                          onTap: () => setState(() => _filter = TaskStatus.pending),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    for (final task in tasks) ...<Widget>[
-                      _TaskTile(
-                        task: task,
-                        onTap: () => _openTaskDetails(task),
                       ),
-                      const SizedBox(height: 12),
-                    ],
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                        itemCount: tasks.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          return _TaskTile(
+                            task: tasks[index],
+                            onTap: () => _openTaskDetails(tasks[index]),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
         );
@@ -109,23 +126,32 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      borderRadius: BorderRadius.circular(32),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.primary.withOpacity(0.15) : Colors.transparent,
-          border: Border.all(
-            color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor,
-          ),
-          borderRadius: BorderRadius.circular(24),
+          color: selected ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: selected ? Theme.of(context).colorScheme.primary : null,
-              ),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: selected ? Colors.white : theme.colorScheme.primary,
+            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -143,52 +169,57 @@ class _TaskTile extends StatelessWidget {
     final theme = Theme.of(context);
     final style = _TaskStyle.fromStatus(task.status, theme);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: BorderDirectional(start: BorderSide(color: style.borderColor, width: 4)),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    task.title,
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    task.location,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      task.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    task.timeLabel,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          task.location,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                        const SizedBox(width: 4),
+                        Text(
+                          task.timeLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            _StatusChip(label: style.label, color: style.labelColor),
-          ],
+              const SizedBox(width: 12),
+              _StatusChip(label: style.label, color: style.labelColor),
+            ],
+          ),
         ),
       ),
     );
@@ -204,16 +235,16 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
             ),
       ),
     );

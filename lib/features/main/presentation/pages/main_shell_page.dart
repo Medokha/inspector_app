@@ -45,35 +45,37 @@ class _MainShellPageState extends State<MainShellPage> {
     ];
 
     return Scaffold(
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _setIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _setIndex,
+        indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const <NavigationDestination>[
+          NavigationDestination(
             icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: Color(0xFF006D77)),
             label: 'الرئيسية',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.assignment_outlined),
+            selectedIcon: Icon(Icons.assignment, color: Color(0xFF006D77)),
             label: 'كل المهام',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map, color: Color(0xFF006D77)),
             label: 'خريطة المسار',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person, color: Color(0xFF006D77)),
             label: 'الملف الشخصي',
           ),
         ],
       ),
-      body: SafeArea(
-        child: IndexedStack(
-          index: _currentIndex,
-          children: pages,
-        ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
       ),
     );
   }

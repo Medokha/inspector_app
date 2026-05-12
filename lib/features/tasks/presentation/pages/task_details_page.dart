@@ -55,149 +55,288 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
   Widget _buildBody(BuildContext context, TaskDetailsEntity details) {
     final theme = Theme.of(context);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: <Widget>[
-        Text(
-          details.task.title,
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          details.task.location,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            _InfoChip(label: details.code),
-            _InfoChip(label: details.stageLabel),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'بيانات المهمة',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _InfoRow(label: 'الموعد', value: details.plannedDate),
-              _InfoRow(label: 'حالة التنفيذ', value: details.stageLabel),
-              _InfoRow(label: 'الوقت المتبقي', value: '٤ ساعات'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'مسار التنفيذ',
-          child: Column(
-            children: details.steps
-                .map((step) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _StepRow(step: step),
-                    ))
-                .toList(),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'موقع المهمة',
-          child: Container(
-            height: 180,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          // Premium Task Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
+              color: theme.colorScheme.primary.withOpacity(0.05),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
             ),
-            child: Center(
-              child: Text(details.mapHint ?? 'اضغط لفتح الخريطة'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _InfoChip(label: details.code),
+                    _StatusBadge(label: details.stageLabel, color: theme.colorScheme.primary),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  details.task.title,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.primary.withOpacity(0.6)),
+                    const SizedBox(width: 4),
+                    Text(
+                      details.task.location,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-        if (details.inspectorNote != null) ...<Widget>[
-          const SizedBox(height: 16),
-          _SectionCard(
-            title: 'ملاحظات المفتش',
-            child: Text(details.inspectorNote!),
+
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                _SectionCard(
+                  title: 'بيانات المهمة',
+                  icon: Icons.assignment_outlined,
+                  child: Column(
+                    children: <Widget>[
+                      _InfoRow(label: 'الموعد المخطط', value: details.plannedDate, icon: Icons.calendar_today),
+                      const Divider(height: 24),
+                      _InfoRow(label: 'الوقت المتبقي', value: '٤ ساعات', icon: Icons.timer_outlined, valueColor: theme.colorScheme.error),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'مسار التنفيذ',
+                  icon: Icons.account_tree_outlined,
+                  child: Column(
+                    children: details.steps.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final step = entry.value;
+                      return _StepRow(
+                        step: step,
+                        isLast: index == details.steps.length - 1,
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'الموقع الجغرافي',
+                  icon: Icons.map_outlined,
+                  child: Container(
+                    height: 180,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.location_searching, color: theme.colorScheme.primary.withOpacity(0.3), size: 32),
+                              const SizedBox(height: 12),
+                              Text(
+                                details.mapHint ?? 'انقر لفتح الخريطة الملاحية',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary.withOpacity(0.5),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: () {},
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (details.inspectorNote != null) ...<Widget>[
+                  const SizedBox(height: 16),
+                  _SectionCard(
+                    title: 'ملاحظات إضافية',
+                    icon: Icons.note_alt_outlined,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        details.inspectorNote!,
+                        style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ReportPage()),
+                      );
+                    },
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    icon: const Icon(Icons.description_outlined),
+                    label: const Text('بدء رفع التقرير الفني', style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    icon: const Icon(Icons.directions_rounded),
+                    label: const Text('توجيه الملاحة', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 48),
+              ],
+            ),
           ),
         ],
-        const SizedBox(height: 24),
-        FilledButton.icon(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReportPage()),
-            );
-          },
-          icon: const Icon(Icons.upload_file_outlined),
-          label: const Text('رفع التقرير'),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.map_outlined),
-          label: const Text('فتح الخريطة'),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
+  const _SectionCard({required this.title, required this.icon, required this.child});
 
   final String title;
+  final IconData icon;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: [
+                Icon(icon, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            child,
+          ],
+        ),
       ),
     );
   }
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.valueColor,
+  });
 
   final String label;
   final String value;
+  final IconData icon;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.3)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              fontWeight: FontWeight.w500,
             ),
           ),
-          Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-        ],
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -210,54 +349,102 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        color: theme.colorScheme.primary,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1,
+        ),
       ),
     );
   }
 }
 
 class _StepRow extends StatelessWidget {
-  const _StepRow({required this.step});
+  const _StepRow({required this.step, required this.isLast});
 
   final TaskStepEntity step;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final style = _StepStyle.fromStatus(step.status, theme);
+    final isDone = step.status == TaskStepStatus.done;
+    final isInProgress = step.status == TaskStepStatus.inProgress;
+    
+    final color = isDone ? theme.colorScheme.primary : (isInProgress ? const Color(0xFFF57C00) : theme.colorScheme.onSurface.withOpacity(0.2));
 
-    return Row(
-      children: <Widget>[
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: style.dotColor, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            step.title,
-            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+    return IntrinsicHeight(
+      child: Row(
+        children: <Widget>[
+          Column(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    if (isInProgress)
+                      BoxShadow(color: color.withOpacity(0.3), blurRadius: 6, spreadRadius: 2),
+                  ],
+                ),
+                child: isDone ? const Icon(Icons.check, size: 8, color: Colors.white) : null,
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: color.withOpacity(0.3),
+                  ),
+                ),
+            ],
           ),
-        ),
-        Text(
-          step.timeLabel,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  step.title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: (isDone || isInProgress) ? FontWeight.w900 : FontWeight.w500,
+                    color: (isDone || isInProgress) ? null : theme.colorScheme.onSurface.withOpacity(0.4),
+                  ),
+                ),
+                if (step.timeLabel.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    step.timeLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

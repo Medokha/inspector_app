@@ -84,9 +84,13 @@ ProfileController createProfileController() {
   return ProfileController(getOverview: useCase);
 }
 
+final _settingsRepository = SettingsRepositoryImpl();
+SettingsController? _settingsController;
+
 SettingsController createSettingsController() {
-  final repository = SettingsRepositoryImpl();
-  final getSettings = GetSettingsUseCase(repository);
-  final updateSettings = UpdateSettingsUseCase(repository);
-  return SettingsController(getSettings: getSettings, updateSettings: updateSettings);
+  _settingsController ??= SettingsController(
+    getSettings: GetSettingsUseCase(_settingsRepository),
+    updateSettings: UpdateSettingsUseCase(_settingsRepository),
+  );
+  return _settingsController!;
 }

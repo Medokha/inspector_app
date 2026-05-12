@@ -29,6 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -40,69 +41,133 @@ class _SettingsPageState extends State<SettingsPage> {
           body: settings == null
               ? const Center(child: CircularProgressIndicator())
               : ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   children: <Widget>[
-                    Center(
-                      child: Column(
-                        children: <Widget>[
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            child: Text(
-                              'أخ',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
+                    // User Header Card
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: <Widget>[
+                            CircleAvatar(
+                              radius: 36,
+                              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                              child: Text(
+                                'أخ',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text('أحمد النجفي'),
-                          Text(
-                            'inspector@waqf.iq',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            Text(
+                              'أحمد النجفي',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'inspector@waqf.iq',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text('الإشعارات', style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    _SettingsSwitch(
-                      label: 'مهام جديدة',
-                      value: settings.newTasks,
-                      onChanged: (value) => _update(settings.copyWith(newTasks: value)),
+                    const SizedBox(height: 24),
+                    
+                    // Notifications Section
+                    _SettingsSection(
+                      title: 'الإشعارات',
+                      children: [
+                        _SettingsSwitch(
+                          label: 'مهام جديدة',
+                          icon: Icons.assignment_outlined,
+                          value: settings.newTasks,
+                          onChanged: (value) => _update(settings.copyWith(newTasks: value)),
+                        ),
+                        _SettingsSwitch(
+                          label: 'اعتماد/رفض التقارير',
+                          icon: Icons.description_outlined,
+                          value: settings.reportApprovals,
+                          onChanged: (value) => _update(settings.copyWith(reportApprovals: value)),
+                        ),
+                        _SettingsSwitch(
+                          label: 'تذكير موعد المهمة',
+                          icon: Icons.notifications_active_outlined,
+                          value: settings.deadlineReminders,
+                          onChanged: (value) => _update(settings.copyWith(deadlineReminders: value)),
+                        ),
+                      ],
                     ),
-                    _SettingsSwitch(
-                      label: 'اعتماد/رفض التقارير',
-                      value: settings.reportApprovals,
-                      onChanged: (value) => _update(settings.copyWith(reportApprovals: value)),
+                    const SizedBox(height: 20),
+                    
+                    // App Section
+                    _SettingsSection(
+                      title: 'التطبيق',
+                      children: [
+                        _SettingsSwitch(
+                          label: 'الوضع الليلي (Dark Mode)',
+                          icon: Icons.dark_mode_outlined,
+                          value: settings.isDarkMode,
+                          onChanged: (value) => _update(settings.copyWith(isDarkMode: value)),
+                        ),
+                        _SettingsSwitch(
+                          label: 'تحميل الخرائط Offline',
+                          icon: Icons.map_outlined,
+                          value: settings.offlineMapsEnabled,
+                          onChanged: (value) => _update(settings.copyWith(offlineMapsEnabled: value)),
+                        ),
+                        _InfoTile(
+                          label: 'حجم ذاكرة التخزين',
+                          icon: Icons.storage_outlined,
+                          value: settings.storageUsedLabel,
+                        ),
+                        _InfoTile(
+                          label: 'نسخة التطبيق',
+                          icon: Icons.info_outline,
+                          value: settings.appVersion,
+                        ),
+                      ],
                     ),
-                    _SettingsSwitch(
-                      label: 'تذكير موعد المهمة',
-                      value: settings.deadlineReminders,
-                      onChanged: (value) => _update(settings.copyWith(deadlineReminders: value)),
+                    const SizedBox(height: 20),
+                    
+                    // Actions Section
+                    _SettingsSection(
+                      title: 'أخرى',
+                      children: [
+                        _ActionTile(
+                          label: 'تغيير كلمة المرور',
+                          icon: Icons.lock_outline,
+                          onTap: () {},
+                        ),
+                        _ActionTile(
+                          label: 'الدعم الفني',
+                          icon: Icons.support_agent_outlined,
+                          onTap: () {},
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    Text('التطبيق', style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    _SettingsSwitch(
-                      label: 'تحميل الخرائط Offline',
-                      value: settings.offlineMapsEnabled,
-                      onChanged: (value) => _update(settings.copyWith(offlineMapsEnabled: value)),
+                    
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {},
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          side: BorderSide(color: theme.colorScheme.error.withOpacity(0.5)),
+                          foregroundColor: theme.colorScheme.error,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        icon: const Icon(Icons.logout_rounded),
+                        label: const Text('تسجيل الخروج', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    _InfoTile(label: 'حجم ذاكرة التخزين', value: settings.storageUsedLabel),
-                    _InfoTile(label: 'نسخة التطبيق', value: settings.appVersion),
-                    const SizedBox(height: 16),
-                    _ActionTile(label: 'تغيير كلمة المرور'),
-                    _ActionTile(label: 'الدعم الفني'),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.logout),
-                      label: const Text('تسجيل الخروج'),
-                    ),
+                    const SizedBox(height: 48),
                   ],
                 ),
         );
@@ -115,52 +180,107 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 }
 
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 8, bottom: 12),
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
+        Card(
+          child: Column(
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SettingsSwitch extends StatelessWidget {
-  const _SettingsSwitch({required this.label, required this.value, required this.onChanged});
+  const _SettingsSwitch({
+    required this.label,
+    required this.icon,
+    required this.value,
+    required this.onChanged,
+  });
 
   final String label;
+  final IconData icon;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SwitchListTile.adaptive(
       value: value,
       onChanged: onChanged,
-      title: Text(label),
-      contentPadding: EdgeInsets.zero,
+      activeColor: theme.colorScheme.primary,
+      title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      secondary: Icon(icon, color: theme.colorScheme.primary.withOpacity(0.7), size: 20),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
     );
   }
 }
 
 class _InfoTile extends StatelessWidget {
-  const _InfoTile({required this.label, required this.value});
+  const _InfoTile({required this.label, required this.icon, required this.value});
 
   final String label;
+  final IconData icon;
   final String value;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
-      title: Text(label),
-      trailing: Text(value),
-      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: theme.colorScheme.primary.withOpacity(0.7), size: 20),
+      title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      trailing: Text(
+        value,
+        style: TextStyle(
+          fontSize: 13,
+          color: theme.colorScheme.onSurface.withOpacity(0.5),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
     );
   }
 }
 
 class _ActionTile extends StatelessWidget {
-  const _ActionTile({required this.label});
+  const _ActionTile({required this.label, required this.icon, required this.onTap});
 
   final String label;
+  final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
-      title: Text(label),
-      trailing: const Icon(Icons.chevron_right),
-      contentPadding: EdgeInsets.zero,
-      onTap: () {},
+      leading: Icon(icon, color: theme.colorScheme.primary.withOpacity(0.7), size: 20),
+      title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      trailing: Icon(Icons.chevron_left_rounded, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.3)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      onTap: onTap,
     );
   }
 }
