@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-
 import 'package:inspector_app/core/di/injection.dart';
-import 'package:inspector_app/features/settings/domain/entities/app_settings.dart';
+import 'package:inspector_app/features/auth/presentation/controller/session_controller.dart';
+import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
+import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/features/settings/presentation/controller/settings_controller.dart';
+import 'package:inspector_app/features/settings/domain/entities/app_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,11 +16,13 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late final SettingsController _controller;
+  late final SessionController _sessionController;
 
   @override
   void initState() {
     super.initState();
     _controller = createSettingsController();
+    _sessionController = createSessionController();
     _controller.load();
   }
 
@@ -27,13 +32,45 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
+  Future<void> _logout() async {
+    final strings = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.logout),
+        content: Text(strings.logoutConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(strings.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(strings.logout, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _sessionController.logout();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        FadePageRoute(child: const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AnimatedBuilder(
-      animation: _controller,
+    return ListenableBuilder(
+      listenable: Listenable.merge([_controller, _sessionController]),
       builder: (context, child) {
         final settings = _controller.settings;
+        final user = _sessionController.user;
+
         return Scaffold(
           appBar: AppBar(
             title: const Text('الإعدادات'),
@@ -53,7 +90,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               radius: 36,
                               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                               child: Text(
-                                'أخ',
+                                user?.name.substring(0, 1) ?? 'أ',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   color: theme.colorScheme.primary,
                                   fontWeight: FontWeight.w900,
@@ -62,12 +99,12 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'أحمد النجفي',
+                              user?.name ?? 'مستخدم',
                               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'inspector@waqf.iq',
+                              user?.email ?? '',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withOpacity(0.5),
                                 fontWeight: FontWeight.w500,
@@ -156,7 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: _logout,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           side: BorderSide(color: theme.colorScheme.error.withOpacity(0.5)),
@@ -164,7 +201,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         ),
                         icon: const Icon(Icons.logout_rounded),
-                        label: const Text('تسجيل الخروج', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: Text(AppLocalizations.of(context).logout, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(height: 48),

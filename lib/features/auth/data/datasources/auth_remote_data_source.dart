@@ -39,6 +39,23 @@ class AuthRemoteDataSource {
     final message = (json['message'] ?? json['error'] ?? 'Login failed').toString();
     throw AuthException(message, statusCode: response.statusCode);
   }
+
+  Future<void> logout(String token) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/Auth/logout');
+
+    final response = await _client.post(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // We don't necessarily throw here on logout failure, 
+      // but we could log it.
+    }
+  }
 }
 
 class AuthException implements Exception {

@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
 import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
+import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -39,12 +38,26 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     _controller.forward();
 
-    Timer(const Duration(milliseconds: 2500), () {
-      if (!mounted) return;
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    final sessionController = createSessionController();
+    await sessionController.initialize();
+    
+    await Future.delayed(const Duration(milliseconds: 2500));
+    
+    if (!mounted) return;
+    
+    if (sessionController.isAuthenticated) {
       Navigator.of(context).pushReplacement(
         FadePageRoute(child: const MainShellPage()),
       );
-    });
+    } else {
+      Navigator.of(context).pushReplacement(
+        FadePageRoute(child: const LoginPage()),
+      );
+    }
   }
 
   @override

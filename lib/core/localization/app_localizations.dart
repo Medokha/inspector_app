@@ -33,6 +33,10 @@ class AppLocalizations {
       'loginButton': 'Login',
       'loginFailed': 'Login failed',
       'loginFillAllFields': 'Please fill all fields',
+      'logout': 'Logout',
+      'logoutConfirm': 'Are you sure you want to logout?',
+      'cancel': 'Cancel',
+      'yes': 'Yes',
     },
     'ar': <String, String>{
       'appTitle': 'تطبيق المفتش',
@@ -46,6 +50,10 @@ class AppLocalizations {
       'loginButton': 'دخول',
       'loginFailed': 'فشل تسجيل الدخول',
       'loginFillAllFields': 'من فضلك أدخل جميع البيانات',
+      'logout': 'تسجيل الخروج',
+      'logoutConfirm': 'هل أنت متأكد من رغبتك في تسجيل الخروج؟',
+      'cancel': 'إلغاء',
+      'yes': 'نعم',
     },
   };
 
@@ -67,6 +75,10 @@ class AppLocalizations {
   String get loginButton => _t('loginButton');
   String get loginFailed => _t('loginFailed');
   String get loginFillAllFields => _t('loginFillAllFields');
+  String get logout => _t('logout');
+  String get logoutConfirm => _t('logoutConfirm');
+  String get cancel => _t('cancel');
+  String get yes => _t('yes');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

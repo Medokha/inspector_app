@@ -1,9 +1,11 @@
 import 'package:inspector_app/core/network/http_client_factory.dart';
 
+import 'package:inspector_app/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:inspector_app/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:inspector_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:inspector_app/features/auth/domain/usecases/login_usecase.dart';
 import 'package:inspector_app/features/auth/presentation/controller/login_controller.dart';
+import 'package:inspector_app/features/auth/presentation/controller/session_controller.dart';
 import 'package:inspector_app/features/counter/data/repositories/counter_repository_impl.dart';
 import 'package:inspector_app/features/counter/domain/usecases/increment_counter.dart';
 import 'package:inspector_app/features/counter/presentation/controller/counter_controller.dart';
@@ -39,12 +41,30 @@ CounterController createCounterController() {
   );
 }
 
+final _authLocalDataSource = AuthLocalDataSource();
+SessionController? _sessionController;
+
+SessionController createSessionController() {
+  final client = createHttpClient();
+  final remote = AuthRemoteDataSource(client);
+  final repository = AuthRepositoryImpl(remote, _authLocalDataSource);
+  
+  _sessionController ??= SessionController(
+    repository: repository,
+    localDataSource: _authLocalDataSource,
+  );
+  return _sessionController!;
+}
+
 LoginController createLoginController() {
   final client = createHttpClient();
   final remote = AuthRemoteDataSource(client);
-  final repository = AuthRepositoryImpl(remote);
+  final repository = AuthRepositoryImpl(remote, _authLocalDataSource);
   final useCase = LoginUseCase(repository);
-  return LoginController(loginUseCase: useCase);
+  return LoginController(
+    loginUseCase: useCase,
+    sessionController: createSessionController(),
+  );
 }
 
 HomeController createHomeController() {
