@@ -6,56 +6,34 @@ import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
 
 import 'package:inspector_app/features/notifications/domain/repositories/notifications_repository.dart';
 
+import 'package:inspector_app/features/tasks/domain/repositories/tasks_repository.dart';
+
 class HomeRepositoryImpl implements HomeRepository {
-  HomeRepositoryImpl(this._notificationsRepo);
+  HomeRepositoryImpl(this._notificationsRepo, this._tasksRepo);
 
   final NotificationsRepository _notificationsRepo;
+  final TasksRepository _tasksRepo;
 
   @override
   Future<HomeOverview> getOverview() async {
-    final active = _tasks;
-    final returned = _tasks.where((item) => item.status == TaskStatus.returned).toList();
+    // Fetch today's tasks
+    final todayTasks = await _tasksRepo.getTasks(date: 'today');
+    
+    // Fetch returned tasks
+    final returnedTasks = await _tasksRepo.getTasks(status: 'rejected');
     
     // Fetch real notifications from API
     final notifications = await _notificationsRepo.getNotifications();
     final unread = await _notificationsRepo.getUnreadCount();
 
     return HomeOverview(
-      inspectorName: 'أحمد النجفي', // This should ideally come from SessionController
+      inspectorName: 'أحمد النجفي', 
       region: 'بغداد - الكرخ',
-      totalToday: 4,
-      returnedCount: returned.length,
-      activeTasks: active,
+      totalToday: todayTasks.length,
+      returnedCount: returnedTasks.length,
+      activeTasks: todayTasks.take(5).toList(),
       recentNotifications: notifications.take(5).toList(),
       unreadNotifications: unread,
     );
   }
 }
-
-final List<TaskEntity> _tasks = <TaskEntity>[
-  TaskEntity(
-    id: 'WQF-2024-007',
-    title: 'مسجد الرحمن - الكرخ',
-    location: 'بغداد - الكرخ',
-    status: TaskStatus.inProgress,
-    timeLabel: 'قبل ٣٠ م',
-    distanceLabel: '٢ كم',
-  ),
-  TaskEntity(
-    id: 'WQF-2024-013',
-    title: 'مركز الأوقاف - الرصافة',
-    location: 'بغداد - الرصافة',
-    status: TaskStatus.pending,
-    timeLabel: 'قبل ٥٠ م',
-    distanceLabel: '٣.٢ كم',
-  ),
-  TaskEntity(
-    id: 'WQF-2024-021',
-    title: 'مستودع الأنبار - إعادة',
-    location: 'الرمادي',
-    status: TaskStatus.returned,
-    timeLabel: 'أمس ٠٥:٠٠ م',
-    distanceLabel: '١٦٢ كم',
-    rejectionReason: 'سبب الرفض: عدم إعادة التشخيص',
-  ),
-];

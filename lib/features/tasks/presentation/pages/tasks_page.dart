@@ -15,18 +15,26 @@ class TasksPage extends StatefulWidget {
 
 class _TasksPageState extends State<TasksPage> {
   late final TasksController _controller;
-  TaskStatus? _filter;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _controller = createTasksController();
     _controller.load();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _controller.loadMore();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -36,13 +44,13 @@ class _TasksPageState extends State<TasksPage> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final tasks = _filteredTasks(_controller.tasks);
+        final tasks = _controller.tasks;
 
         return Scaffold(
           appBar: AppBar(
             title: const Text('كل المهام'),
           ),
-          body: _controller.isLoading && tasks.isEmpty
+          body: _controller.isLoading
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   children: [
@@ -54,32 +62,32 @@ class _TasksPageState extends State<TasksPage> {
                           children: <Widget>[
                             _FilterChip(
                               label: 'الكل',
-                              selected: _filter == null,
-                              onTap: () => setState(() => _filter = null),
+                              selected: _controller.statusFilter == null,
+                              onTap: () => _controller.setFilter(null),
                             ),
                             const SizedBox(width: 8),
                             _FilterChip(
                               label: 'جارية',
-                              selected: _filter == TaskStatus.inProgress,
-                              onTap: () => setState(() => _filter = TaskStatus.inProgress),
+                              selected: _controller.statusFilter == TaskStatus.inProgress,
+                              onTap: () => _controller.setFilter(TaskStatus.inProgress),
                             ),
                             const SizedBox(width: 8),
                             _FilterChip(
                               label: 'مُعادة',
-                              selected: _filter == TaskStatus.returned,
-                              onTap: () => setState(() => _filter = TaskStatus.returned),
+                              selected: _controller.statusFilter == TaskStatus.returned,
+                              onTap: () => _controller.setFilter(TaskStatus.returned),
                             ),
                             const SizedBox(width: 8),
                             _FilterChip(
                               label: 'معلقة',
-                              selected: _filter == TaskStatus.pending,
-                              onTap: () => setState(() => _filter = TaskStatus.pending),
+                              selected: _controller.statusFilter == TaskStatus.pending,
+                              onTap: () => _controller.setFilter(TaskStatus.pending),
                             ),
                             const SizedBox(width: 8),
                             _FilterChip(
                               label: 'منتهية',
-                              selected: _filter == TaskStatus.completed,
-                              onTap: () => setState(() => _filter = TaskStatus.completed),
+                              selected: _controller.statusFilter == TaskStatus.completed,
+                              onTap: () => _controller.setFilter(TaskStatus.completed),
                             ),
                           ],
                         ),
@@ -87,14 +95,24 @@ class _TasksPageState extends State<TasksPage> {
                     ),
                     Expanded(
                       child: ListView.separated(
+                        controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                        itemCount: tasks.length,
+                        itemCount: tasks.length + (_controller.hasMore ? 1 : 0),
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          return _TaskTile(
-                            task: tasks[index],
-                            onTap: () => _openTaskDetails(tasks[index]),
-                          );
+                          if (index < tasks.length) {
+                            return _TaskTile(
+                              task: tasks[index],
+                              onTap: () => _openTaskDetails(tasks[index]),
+                            );
+                          } else {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),
@@ -103,11 +121,6 @@ class _TasksPageState extends State<TasksPage> {
         );
       },
     );
-  }
-
-  List<TaskEntity> _filteredTasks(List<TaskEntity> tasks) {
-    if (_filter == null) return tasks;
-    return tasks.where((task) => task.status == _filter).toList();
   }
 
   void _openTaskDetails(TaskEntity task) {

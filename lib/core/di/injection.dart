@@ -27,6 +27,7 @@ import 'package:inspector_app/features/settings/data/repositories/settings_repos
 import 'package:inspector_app/features/settings/domain/usecases/get_settings_usecase.dart';
 import 'package:inspector_app/features/settings/domain/usecases/update_settings_usecase.dart';
 import 'package:inspector_app/features/settings/presentation/controller/settings_controller.dart';
+import 'package:inspector_app/features/tasks/data/datasources/tasks_remote_data_source.dart';
 import 'package:inspector_app/features/tasks/data/repositories/tasks_repository_impl.dart';
 import 'package:inspector_app/features/tasks/domain/usecases/get_task_details_usecase.dart';
 import 'package:inspector_app/features/tasks/domain/usecases/get_tasks_usecase.dart';
@@ -73,19 +74,27 @@ HomeController createHomeController() {
   final notificationRemote = NotificationsRemoteDataSource(client, _authLocalDataSource);
   final notificationRepo = NotificationsRepositoryImpl(notificationRemote);
   
-  final repository = HomeRepositoryImpl(notificationRepo);
+  final tasksRemote = TasksRemoteDataSource(client, _authLocalDataSource);
+  final tasksRepo = TasksRepositoryImpl(tasksRemote);
+  
+  final repository = HomeRepositoryImpl(notificationRepo, tasksRepo);
   final useCase = GetHomeOverviewUseCase(repository);
   return HomeController(getOverview: useCase);
 }
 
 TasksController createTasksController() {
-  final repository = TasksRepositoryImpl();
-  final useCase = GetTasksUseCase(repository);
-  return TasksController(getTasks: useCase);
+  final client = createHttpClient();
+  final remote = TasksRemoteDataSource(client, _authLocalDataSource);
+  final repository = TasksRepositoryImpl(remote);
+  return TasksController(
+    getTasks: GetTasksUseCase(repository),
+  );
 }
 
 TaskDetailsController createTaskDetailsController() {
-  final repository = TasksRepositoryImpl();
+  final client = createHttpClient();
+  final remote = TasksRemoteDataSource(client, _authLocalDataSource);
+  final repository = TasksRepositoryImpl(remote);
   final useCase = GetTaskDetailsUseCase(repository);
   return TaskDetailsController(getTaskDetails: useCase);
 }

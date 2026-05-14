@@ -6,7 +6,17 @@ class GetTasksUseCase {
 
   final TasksRepository _repository;
 
-  Future<List<TaskEntity>> call() {
-    return _repository.getTasks();
+  Future<List<TaskEntity>> call({
+    String? date,
+    String? status,
+    int page = 1,
+    int pageSize = 10,
+  }) {
+    return _repository.getTasks(
+      date: date,
+      status: status,
+      page: page,
+      pageSize: pageSize,
+    );
   }
 }
