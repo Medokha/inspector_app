@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/utils/map_launcher.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_step_entity.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/task_details_controller.dart';
@@ -140,42 +141,47 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   title: 'الموقع الجغرافي',
                   icon: Icons.map_outlined,
                   child: Container(
-                    height: 180,
+                    height: 200,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
                     ),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.location_searching, color: theme.colorScheme.primary.withOpacity(0.3), size: 32),
-                              const SizedBox(height: 12),
-                              Text(
-                                details.mapHint ?? 'انقر لفتح الخريطة الملاحية',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary.withOpacity(0.5),
-                                  fontWeight: FontWeight.bold,
-                                ),
+                    clipBehavior: Clip.antiAlias,
+                    child: (details.task.latitude != null && details.task.longitude != null)
+                        ? GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: LatLng(details.task.latitude!, details.task.longitude!),
+                              zoom: 15,
+                            ),
+                            markers: {
+                              Marker(
+                                markerId: MarkerId(details.task.id),
+                                position: LatLng(details.task.latitude!, details.task.longitude!),
+                                infoWindow: InfoWindow(title: details.task.title),
                               ),
-                            ],
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {},
+                            },
+                            myLocationButtonEnabled: false,
+                            zoomControlsEnabled: false,
+                            mapToolbarEnabled: false,
+                          )
+                        : Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.location_searching, color: theme.colorScheme.primary.withOpacity(0.3), size: 32),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'الموقع الجغرافي غير متوفر',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary.withOpacity(0.5),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
                 if (details.inspectorNote != null) ...<Widget>[
@@ -218,7 +224,13 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: (details.task.latitude != null && details.task.longitude != null)
+                        ? () => MapLauncher.launchNavigation(
+                              latitude: details.task.latitude!,
+                              longitude: details.task.longitude!,
+                              title: details.task.title,
+                            )
+                        : null,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

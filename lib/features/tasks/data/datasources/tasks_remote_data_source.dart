@@ -59,4 +59,26 @@ class TasksRemoteDataSource {
 
     throw Exception('Failed to load task details');
   }
+
+  Future<Map<String, dynamic>> getRoute({String? date}) async {
+    final token = await _authLocal.getToken();
+    final queryParams = <String, String>{};
+    if (date != null) queryParams['date'] = date;
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/Tasks/route').replace(queryParameters: queryParams);
+
+    final response = await _client.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    }
+
+    throw Exception('Failed to load route');
+  }
 }

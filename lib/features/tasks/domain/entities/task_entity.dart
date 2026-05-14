@@ -9,6 +9,8 @@ class TaskEntity {
     required this.timeLabel,
     this.distanceLabel,
     this.rejectionReason,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -18,4 +20,6 @@ class TaskEntity {
   final String timeLabel;
   final String? distanceLabel;
   final String? rejectionReason;
+  final double? latitude;
+  final double? longitude;
 }

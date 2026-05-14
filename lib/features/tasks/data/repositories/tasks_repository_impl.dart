@@ -35,6 +35,8 @@ class TasksRepositoryImpl implements TasksRepository {
         timeLabel: _formatDueDate(dueDate),
         distanceLabel: '', // TODO: Calculate distance if coordinates available
         rejectionReason: json['rejectionReason']?.toString(),
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
       );
     }).toList();
   }
@@ -52,6 +54,8 @@ class TasksRepositoryImpl implements TasksRepository {
       timeLabel: _formatDueDate(dueDate),
       distanceLabel: '',
       rejectionReason: json['rejectionReason']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
 
     return TaskDetailsEntity(

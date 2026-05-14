@@ -109,7 +109,9 @@ NotificationsController createNotificationsController() {
 }
 
 RouteController createRouteController() {
-  final repository = RouteRepositoryImpl();
+  final client = createHttpClient();
+  final remote = TasksRemoteDataSource(client, _authLocalDataSource);
+  final repository = RouteRepositoryImpl(remote);
   final useCase = GetRouteStopsUseCase(repository);
   return RouteController(getStops: useCase);
 }

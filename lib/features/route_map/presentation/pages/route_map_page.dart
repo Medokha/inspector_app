@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/utils/map_launcher.dart';
 import 'package:inspector_app/features/route_map/domain/entities/route_stop_entity.dart';
 import 'package:inspector_app/features/route_map/presentation/controller/route_controller.dart';
 
@@ -42,7 +43,7 @@ class _RouteMapPageState extends State<RouteMapPage> {
               : ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   children: <Widget>[
-                    _MapPlaceholder(),
+                    _InteractiveMap(stops: _controller.stops),
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -85,52 +86,60 @@ class _RouteMapPageState extends State<RouteMapPage> {
   }
 }
 
-class _MapPlaceholder extends StatelessWidget {
+class _InteractiveMap extends StatelessWidget {
+  const _InteractiveMap({required this.stops});
+
+  final List<RouteStopEntity> stops;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    // Filter valid coordinates
+    final validStops = stops.where((s) => s.latitude != null && s.longitude != null).toList();
+    
+    if (validStops.isEmpty) {
+      return Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Center(
+          child: Text('المواقع غير متوفرة حالياً', style: TextStyle(color: theme.colorScheme.primary)),
+        ),
+      );
+    }
+
+    final markers = validStops.map((stop) {
+      return Marker(
+        markerId: MarkerId(stop.taskId),
+        position: LatLng(stop.latitude!, stop.longitude!),
+        infoWindow: InfoWindow(title: stop.title, snippet: 'ترتيب الزيارة: ${stop.order}'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          stop.status == RouteStopStatus.inProgress ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueAzure,
+        ),
+      );
+    }).toSet();
+
     return Container(
-      height: 220,
+      height: 250,
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
-        image: const DecorationImage(
-          image: AssetImage('assets/images/logo.png'), // Using logo as a pattern placeholder
-          opacity: 0.03,
-          repeat: ImageRepeat.repeat,
-          scale: 8,
-        ),
       ),
-      child: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.map_outlined, size: 48, color: theme.colorScheme.primary.withOpacity(0.5)),
-                const SizedBox(height: 12),
-                Text(
-                  'خريطة المسار التفاعلية',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.primary.withOpacity(0.7),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton.small(
-              onPressed: () {},
-              elevation: 2,
-              backgroundColor: theme.colorScheme.primary,
-              child: const Icon(Icons.my_location, color: Colors.white, size: 18),
-            ),
-          ),
-        ],
+      clipBehavior: Clip.antiAlias,
+      child: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: LatLng(validStops.first.latitude!, validStops.first.longitude!),
+          zoom: 12,
+        ),
+        markers: markers,
+        myLocationEnabled: true,
+        myLocationButtonEnabled: false,
+        zoomControlsEnabled: false,
+        mapToolbarEnabled: false,
       ),
     );
   }
@@ -204,6 +213,21 @@ class _RouteStopCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             _StatusChip(label: style.label, color: style.badgeColor),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              onPressed: (stop.latitude != null && stop.longitude != null)
+                  ? () => MapLauncher.launchNavigation(
+                        latitude: stop.latitude!,
+                        longitude: stop.longitude!,
+                        title: stop.title,
+                      )
+                  : null,
+              icon: const Icon(Icons.directions_rounded, size: 20),
+              style: IconButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(40, 40),
+              ),
+            ),
           ],
         ),
       ),
