@@ -13,8 +13,9 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  FirebaseMessaging? _fcm;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  bool _isInitialized = false;
   
   final _onNotificationReceived = StreamController<RemoteMessage>.broadcast();
   Stream<RemoteMessage> get onNotificationReceived => _onNotificationReceived.stream;
@@ -22,41 +23,50 @@ class NotificationService {
   final _authLocal = AuthLocalDataSource();
 
   Future<void> initialize() async {
-    // 1. Request permissions
-    await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      _fcm = FirebaseMessaging.instance;
+      
+      // 1. Request permissions
+      await _fcm?.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    // 2. Initialize Local Notifications
-    const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(),
-    );
-    await _localNotifications.initialize(
-      settings: initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
-        // Handle notification click when app is in foreground
-      },
-    );
+      // 2. Initialize Local Notifications
+      const initializationSettings = InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(),
+      );
+      await _localNotifications.initialize(
+        settings: initializationSettings,
+        onDidReceiveNotificationResponse: (details) {
+          // Handle notification click when app is in foreground
+        },
+      );
 
-    // 3. Handle background messages
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      // 3. Handle background messages
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 4. Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _onNotificationReceived.add(message);
-      _showLocalNotification(message);
-    });
+      // 4. Handle foreground messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        _onNotificationReceived.add(message);
+        _showLocalNotification(message);
+      });
 
-    // 5. Get and save FCM Token
-    _updateFcmToken();
+      // 5. Get and save FCM Token
+      _updateFcmToken();
+      
+      _isInitialized = true;
+    } catch (e) {
+      print('NotificationService: Firebase not available or configuration missing: $e');
+    }
   }
 
   Future<void> _updateFcmToken() async {
+    if (_fcm == null) return;
     try {
-      String? token = await _fcm.getToken();
+      String? token = await _fcm?.getToken();
       if (token != null) {
         final authToken = await _authLocal.getToken();
         if (authToken != null) {
