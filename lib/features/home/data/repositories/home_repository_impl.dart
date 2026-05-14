@@ -4,20 +4,29 @@ import 'package:inspector_app/features/notifications/domain/entities/notificatio
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
 
+import 'package:inspector_app/features/notifications/domain/repositories/notifications_repository.dart';
+
 class HomeRepositoryImpl implements HomeRepository {
+  HomeRepositoryImpl(this._notificationsRepo);
+
+  final NotificationsRepository _notificationsRepo;
+
   @override
   Future<HomeOverview> getOverview() async {
     final active = _tasks;
     final returned = _tasks.where((item) => item.status == TaskStatus.returned).toList();
-    final unread = _notifications.where((item) => item.isUnread).length;
+    
+    // Fetch real notifications from API
+    final notifications = await _notificationsRepo.getNotifications();
+    final unread = await _notificationsRepo.getUnreadCount();
 
     return HomeOverview(
-      inspectorName: 'أحمد النجفي',
+      inspectorName: 'أحمد النجفي', // This should ideally come from SessionController
       region: 'بغداد - الكرخ',
       totalToday: 4,
       returnedCount: returned.length,
       activeTasks: active,
-      recentNotifications: _notifications.take(2).toList(),
+      recentNotifications: notifications.take(5).toList(),
       unreadNotifications: unread,
     );
   }
@@ -48,22 +57,5 @@ final List<TaskEntity> _tasks = <TaskEntity>[
     timeLabel: 'أمس ٠٥:٠٠ م',
     distanceLabel: '١٦٢ كم',
     rejectionReason: 'سبب الرفض: عدم إعادة التشخيص',
-  ),
-];
-
-final List<NotificationItemEntity> _notifications = <NotificationItemEntity>[
-  NotificationItemEntity(
-    id: 'n1',
-    title: 'تم رفض تقرير مستودع الأنبار - الصور غير واضحة برجاء إعادة الزيارة',
-    timeLabel: 'منذ ساعتين',
-    type: NotificationType.report,
-    isUnread: true,
-  ),
-  NotificationItemEntity(
-    id: 'n2',
-    title: 'مهمة جديدة لمركز الأوقاف - الرصافة، الموعد اليوم ٢:٠٠ م',
-    timeLabel: 'منذ ٣ س',
-    type: NotificationType.task,
-    isUnread: true,
   ),
 ];

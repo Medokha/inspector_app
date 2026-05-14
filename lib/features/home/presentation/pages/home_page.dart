@@ -29,6 +29,7 @@ class _HomePageState extends State<HomePage> {
     _controller = createHomeController();
     _controller.load();
     _controller.startPolling();
+    _controller.startListeningToNotifications();
   }
 
   @override
@@ -198,10 +199,22 @@ class _HomePageState extends State<HomePage> {
                         ),
                         itemBuilder: (context, index) {
                           final notification = overview!.recentNotifications[index];
-                          return _NotificationRow(
-                            title: notification.title,
-                            timeLabel: notification.timeLabel,
-                            isUnread: notification.isUnread,
+                          return InkWell(
+                            onTap: () async {
+                              if (notification.isUnread) {
+                                final notifyController = createNotificationsController();
+                                await notifyController.markAsRead(notification.id);
+                                _controller.load(); // Refresh home
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              child: _NotificationRow(
+                                title: notification.title,
+                                timeLabel: notification.timeLabel,
+                                isUnread: notification.isUnread,
+                              ),
+                            ),
                           );
                         },
                       ),

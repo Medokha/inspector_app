@@ -3,4 +3,5 @@ import 'package:inspector_app/features/notifications/domain/entities/notificatio
 abstract class NotificationsRepository {
   Future<List<NotificationItemEntity>> getNotifications();
   Future<int> getUnreadCount();
+  Future<void> markAsRead(String id);
 }

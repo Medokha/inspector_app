@@ -21,6 +21,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     _controller = createNotificationsController();
     _controller.load();
     _controller.startPolling();
+    _controller.startListeningToNotifications();
   }
 
   @override
@@ -76,7 +77,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    return _NotificationTile(item: items[index]);
+                    final item = items[index];
+                    return _NotificationTile(
+                      item: item,
+                      onTap: () {
+                        if (item.isUnread) {
+                          _controller.markAsRead(item.id);
+                        }
+                      },
+                    );
                   },
                 ),
               ),
@@ -135,9 +144,10 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.item});
+  const _NotificationTile({required this.item, required this.onTap});
 
   final NotificationItemEntity item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +156,7 @@ class _NotificationTile extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

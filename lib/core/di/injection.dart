@@ -12,6 +12,7 @@ import 'package:inspector_app/features/counter/presentation/controller/counter_c
 import 'package:inspector_app/features/home/data/repositories/home_repository_impl.dart';
 import 'package:inspector_app/features/home/domain/usecases/get_home_overview_usecase.dart';
 import 'package:inspector_app/features/home/presentation/controller/home_controller.dart';
+import 'package:inspector_app/features/notifications/data/datasources/notifications_remote_data_source.dart';
 import 'package:inspector_app/features/notifications/data/repositories/notifications_repository_impl.dart';
 import 'package:inspector_app/features/notifications/domain/usecases/get_notifications_usecase.dart';
 import 'package:inspector_app/features/notifications/domain/usecases/get_unread_notifications_usecase.dart';
@@ -68,7 +69,11 @@ LoginController createLoginController() {
 }
 
 HomeController createHomeController() {
-  final repository = HomeRepositoryImpl();
+  final client = createHttpClient();
+  final notificationRemote = NotificationsRemoteDataSource(client, _authLocalDataSource);
+  final notificationRepo = NotificationsRepositoryImpl(notificationRemote);
+  
+  final repository = HomeRepositoryImpl(notificationRepo);
   final useCase = GetHomeOverviewUseCase(repository);
   return HomeController(getOverview: useCase);
 }
@@ -86,10 +91,12 @@ TaskDetailsController createTaskDetailsController() {
 }
 
 NotificationsController createNotificationsController() {
-  final repository = NotificationsRepositoryImpl();
+  final client = createHttpClient();
+  final remote = NotificationsRemoteDataSource(client, _authLocalDataSource);
+  final repository = NotificationsRepositoryImpl(remote);
   final getItems = GetNotificationsUseCase(repository);
   final getUnread = GetUnreadNotificationsUseCase(repository);
-  return NotificationsController(getNotifications: getItems, getUnreadCount: getUnread);
+  return NotificationsController(getNotifications: getItems, getUnreadCount: getUnread, repository: repository);
 }
 
 RouteController createRouteController() {
