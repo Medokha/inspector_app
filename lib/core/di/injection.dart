@@ -1,4 +1,8 @@
 import 'package:inspector_app/core/network/http_client_factory.dart';
+import 'package:inspector_app/core/database/database_service.dart';
+import 'package:inspector_app/core/sync/sync_service.dart';
+import 'package:inspector_app/features/tasks/presentation/controller/report_controller.dart';
+import 'package:inspector_app/features/profile/presentation/controller/reports_controller.dart';
 
 import 'package:inspector_app/features/auth/data/datasources/auth_local_data_source.dart';
 import 'package:inspector_app/features/auth/data/datasources/auth_remote_data_source.dart';
@@ -17,6 +21,7 @@ import 'package:inspector_app/features/notifications/data/repositories/notificat
 import 'package:inspector_app/features/notifications/domain/usecases/get_notifications_usecase.dart';
 import 'package:inspector_app/features/notifications/domain/usecases/get_unread_notifications_usecase.dart';
 import 'package:inspector_app/features/notifications/presentation/controller/notifications_controller.dart';
+import 'package:inspector_app/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:inspector_app/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:inspector_app/features/profile/domain/usecases/get_profile_overview_usecase.dart';
 import 'package:inspector_app/features/profile/presentation/controller/profile_controller.dart';
@@ -44,7 +49,19 @@ CounterController createCounterController() {
 }
 
 final _authLocalDataSource = AuthLocalDataSource();
+final _dbService = DatabaseService();
 SessionController? _sessionController;
+SyncService? _syncService;
+
+SyncService getSyncService() {
+  if (_syncService != null) return _syncService!;
+  
+  final client = createHttpClient();
+  final tasksRemote = TasksRemoteDataSource(client, _authLocalDataSource);
+  _syncService = SyncService(_dbService, tasksRemote);
+  _syncService!.init();
+  return _syncService!;
+}
 
 SessionController createSessionController() {
   final client = createHttpClient();
@@ -98,6 +115,14 @@ TaskDetailsController createTaskDetailsController() {
   final useCase = GetTaskDetailsUseCase(repository);
   return TaskDetailsController(getTaskDetails: useCase);
 }
+ 
+ReportController createReportController(String taskId) {
+  return ReportController(
+    taskId: taskId,
+    db: _dbService,
+    syncService: getSyncService(),
+  );
+}
 
 NotificationsController createNotificationsController() {
   final client = createHttpClient();
@@ -117,9 +142,18 @@ RouteController createRouteController() {
 }
 
 ProfileController createProfileController() {
-  final repository = ProfileRepositoryImpl();
+  final client = createHttpClient();
+  final remote = ProfileRemoteDataSource(client, _authLocalDataSource);
+  final repository = ProfileRepositoryImpl(remote);
   final useCase = GetProfileOverviewUseCase(repository);
   return ProfileController(getOverview: useCase);
+}
+
+ReportsController createReportsController() {
+  final client = createHttpClient();
+  final remote = ProfileRemoteDataSource(client, _authLocalDataSource);
+  final repository = ProfileRepositoryImpl(remote);
+  return ReportsController(repository: repository);
 }
 
 final _settingsRepository = SettingsRepositoryImpl();

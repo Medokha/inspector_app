@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path/path.dart';
 import 'package:http/http.dart' as http;
 import 'package:inspector_app/core/config/api_config.dart';
 import 'package:inspector_app/features/auth/data/datasources/auth_local_data_source.dart';
@@ -8,6 +11,7 @@ class TasksRemoteDataSource {
 
   final http.Client _client;
   final AuthLocalDataSource _authLocal;
+  final Dio _dio = Dio();
 
   Future<Map<String, dynamic>> getTasks({
     String? date,
@@ -80,5 +84,46 @@ class TasksRemoteDataSource {
     }
 
     throw Exception('Failed to load route');
+  }
+
+  Future<void> submitReport(String taskId, Map<String, dynamic> data) async {
+    final token = await _authLocal.getToken();
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/Tasks/$taskId/report');
+
+    final response = await _client.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to submit report');
+    }
+  }
+
+  Future<void> uploadMedia(String taskId, File file) async {
+    final token = await _authLocal.getToken();
+    final url = '${ApiConfig.baseUrl}/api/Tasks/$taskId/media';
+
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path, filename: basename(file.path)),
+    });
+
+    final response = await _dio.post(
+      url,
+      data: formData,
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+
+    if (response.statusCode == null || response.statusCode! < 200 || response.statusCode! >= 300) {
+      throw Exception('Failed to upload media');
+    }
   }
 }

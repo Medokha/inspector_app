@@ -204,22 +204,58 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   ),
                 ],
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ReportPage()),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                if (_controller.isWithinRange) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => ReportPage(taskId: widget.taskId)),
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      icon: const Icon(Icons.description_outlined),
+                      label: const Text('بدء رفع التقرير الفني', style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
-                    icon: const Icon(Icons.description_outlined),
-                    label: const Text('بدء رفع التقرير الفني', style: TextStyle(fontWeight: FontWeight.w900)),
                   ),
-                ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.error.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.error.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.location_off_outlined, color: theme.colorScheme.error),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'يجب أن تكون في موقع المهمة (على بعد أقل من ١٠٠ متر) لتتمكن من رفع التقرير.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed: _controller.checkProximity,
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('تحديث المسافة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,

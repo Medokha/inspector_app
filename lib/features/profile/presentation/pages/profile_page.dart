@@ -4,6 +4,8 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/features/profile/domain/entities/profile_overview.dart';
 import 'package:inspector_app/features/profile/domain/entities/report_item.dart';
 import 'package:inspector_app/features/profile/presentation/controller/profile_controller.dart';
+import 'package:inspector_app/features/profile/presentation/pages/reports_list_page.dart';
+import 'package:inspector_app/core/routing/page_transitions.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.onOpenSettings});
@@ -179,7 +181,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          FadePageRoute(child: const ReportsListPage()),
+                        );
+                      },
                       child: const Text('عرض الكل'),
                     ),
                   ],

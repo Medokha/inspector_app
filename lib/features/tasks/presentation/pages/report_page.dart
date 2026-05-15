@@ -1,109 +1,181 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/features/tasks/presentation/controller/report_controller.dart';
 
 class ReportPage extends StatefulWidget {
-  const ReportPage({super.key});
+  const ReportPage({super.key, required this.taskId});
+
+  final String taskId;
 
   @override
   State<ReportPage> createState() => _ReportPageState();
 }
 
 class _ReportPageState extends State<ReportPage> {
-  String _selected = 'good';
-  bool _hasIssues = false;
+  late final ReportController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = createReportController(widget.taskId);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('رفع التقرير'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Text(
-            'الحالة العامة للموقع',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('رفع التقرير'),
           ),
-          const SizedBox(height: 12),
-          _ReportOption(
-            value: 'good',
-            groupValue: _selected,
-            label: 'جيد - العمل يسير حسب الخطة',
-            onChanged: (value) => setState(() => _selected = value),
-          ),
-          _ReportOption(
-            value: 'acceptable',
-            groupValue: _selected,
-            label: 'مقبول - تأخر بسيط أو ملاحظات',
-            onChanged: (value) => setState(() => _selected = value),
-          ),
-          _ReportOption(
-            value: 'weak',
-            groupValue: _selected,
-            label: 'ضعيف - مشاكل تحتاج تدخل',
-            onChanged: (value) => setState(() => _selected = value),
-          ),
-          _ReportOption(
-            value: 'stopped',
-            groupValue: _selected,
-            label: 'متوقف - العمل توقف كلياً',
-            onChanged: (value) => setState(() => _selected = value),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'تقييم جودة التنفيذ',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const LinearProgressIndicator(value: 0.75),
-          const SizedBox(height: 8),
-          const Text('نسبة الإنجاز الفعلية 75%'),
-          const SizedBox(height: 16),
-          SwitchListTile.adaptive(
-            value: _hasIssues,
-            onChanged: (value) => setState(() => _hasIssues = value),
-            title: const Text('مخالفات موجودة؟'),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'الصور المرفقة - إلزامي',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
+          body: ListView(
+            padding: const EdgeInsets.all(24),
             children: <Widget>[
-              _UploadPlaceholder(color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              _UploadPlaceholder(color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              _UploadPlaceholder(color: theme.colorScheme.primary),
+              _SectionHeader(title: 'الحالة العامة للموقع'),
+              const SizedBox(height: 12),
+              _ReportOption(
+                value: 'good',
+                groupValue: _controller.generalCondition,
+                label: 'جيد - العمل يسير حسب الخطة',
+                onChanged: _controller.setCondition,
+              ),
+              _ReportOption(
+                value: 'acceptable',
+                groupValue: _controller.generalCondition,
+                label: 'مقبول - تأخر بسيط أو ملاحظات',
+                onChanged: _controller.setCondition,
+              ),
+              _ReportOption(
+                value: 'weak',
+                groupValue: _controller.generalCondition,
+                label: 'ضعيف - مشاكل تحتاج تدخل',
+                onChanged: _controller.setCondition,
+              ),
+              _ReportOption(
+                value: 'stopped',
+                groupValue: _controller.generalCondition,
+                label: 'متوقف - العمل توقف كلياً',
+                onChanged: _controller.setCondition,
+              ),
+              const SizedBox(height: 32),
+              _SectionHeader(title: 'تقييم جودة التنفيذ'),
+              const SizedBox(height: 16),
+              Slider(
+                value: _controller.qualityScore.toDouble(),
+                min: 0,
+                max: 100,
+                divisions: 20,
+                label: '${_controller.qualityScore}%',
+                onChanged: (value) => _controller.setScore(value.toInt()),
+              ),
+              Center(
+                child: Text(
+                  'نسبة الإنجاز الفعلية: ${_controller.qualityScore}%',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              SwitchListTile.adaptive(
+                value: _controller.hasViolations,
+                onChanged: _controller.setViolations,
+                title: const Text('هل توجد مخالفات في الموقع؟'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 32),
+              _SectionHeader(title: 'الصور المرفقة'),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _controller.photoPaths.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    if (index == _controller.photoPaths.length) {
+                      return _AddPhotoCard(onTap: _controller.pickImage);
+                    }
+                    return _PhotoPreviewCard(path: _controller.photoPaths[index]);
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+              _SectionHeader(title: 'ملاحظات المفتش'),
+              const SizedBox(height: 12),
+              TextField(
+                maxLines: 4,
+                onChanged: _controller.setNotes,
+                decoration: const InputDecoration(
+                  hintText: 'اكتب ملاحظاتك الفنية هنا...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 48),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _controller.isSubmitting
+                      ? null
+                      : () async {
+                          await _controller.submit();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('تم حفظ التقرير بنجاح وسيتم رفعه تلقائياً')),
+                            );
+                            Navigator.of(context).pop();
+                          }
+                        },
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: _controller.isSubmitting
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.cloud_upload_outlined),
+                  label: const Text('إرسال التقرير', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'سيتم حفظ التقرير محلياً في حال عدم توفر الإنترنت ورفعه لاحقاً',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
             ],
           ),
-          const SizedBox(height: 16),
-          TextField(
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText: 'اكتب ملاحظات هنا...',
-            ),
+        );
+      },
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.send_outlined),
-            label: const Text('إرسال التقرير'),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'سيتم حفظ التقرير محلياً لحين توفر الإنترنت',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }
@@ -129,26 +201,47 @@ class _ReportOption extends StatelessWidget {
       onChanged: (value) => onChanged(value ?? groupValue),
       title: Text(label),
       contentPadding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
 
-class _UploadPlaceholder extends StatelessWidget {
-  const _UploadPlaceholder({required this.color});
-
-  final Color color;
+class _AddPhotoCard extends StatelessWidget {
+  const _AddPhotoCard({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 80,
+        width: 100,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.4)),
+          color: theme.colorScheme.primary.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2), style: BorderStyle.solid),
         ),
-        child: Center(
-          child: Icon(Icons.add, color: color),
+        child: Icon(Icons.add_a_photo_outlined, color: theme.colorScheme.primary),
+      ),
+    );
+  }
+}
+
+class _PhotoPreviewCard extends StatelessWidget {
+  const _PhotoPreviewCard({required this.path});
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 100,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        image: DecorationImage(
+          image: FileImage(File(path)),
+          fit: BoxFit.cover,
         ),
       ),
     );
