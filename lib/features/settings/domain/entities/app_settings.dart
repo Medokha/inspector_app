@@ -34,4 +34,24 @@ class AppSettings {
       appVersion: appVersion,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'newTasks': newTasks,
+        'reportApprovals': reportApprovals,
+        'deadlineReminders': deadlineReminders,
+        'offlineMapsEnabled': offlineMapsEnabled,
+        'isDarkMode': isDarkMode,
+        'storageUsedLabel': storageUsedLabel,
+        'appVersion': appVersion,
+      };
+
+  factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
+        newTasks: json['newTasks'] as bool? ?? true,
+        reportApprovals: json['reportApprovals'] as bool? ?? true,
+        deadlineReminders: json['deadlineReminders'] as bool? ?? false,
+        offlineMapsEnabled: json['offlineMapsEnabled'] as bool? ?? true,
+        isDarkMode: json['isDarkMode'] as bool? ?? false,
+        storageUsedLabel: json['storageUsedLabel'] as String? ?? '',
+        appVersion: json['appVersion'] as String? ?? '',
+      );
 }

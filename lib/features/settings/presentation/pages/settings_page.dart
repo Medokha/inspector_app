@@ -6,6 +6,9 @@ import 'package:inspector_app/core/routing/page_transitions.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/features/settings/presentation/controller/settings_controller.dart';
 import 'package:inspector_app/features/settings/domain/entities/app_settings.dart';
+import 'package:inspector_app/features/settings/presentation/pages/change_password_page.dart';
+import 'package:inspector_app/features/settings/presentation/pages/support_page.dart';
+import 'package:inspector_app/core/routing/page_transitions.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -179,12 +182,16 @@ class _SettingsPageState extends State<SettingsPage> {
                         _ActionTile(
                           label: 'تغيير كلمة المرور',
                           icon: Icons.lock_outline,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(context, FadePageRoute(child: const ChangePasswordPage()));
+                          },
                         ),
                         _ActionTile(
                           label: 'الدعم الفني',
                           icon: Icons.support_agent_outlined,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(context, FadePageRoute(child: const SupportPage()));
+                          },
                         ),
                       ],
                     ),
