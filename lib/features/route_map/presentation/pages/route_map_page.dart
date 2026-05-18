@@ -4,6 +4,7 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/utils/map_launcher.dart';
 import 'package:inspector_app/features/route_map/domain/entities/route_stop_entity.dart';
 import 'package:inspector_app/features/route_map/presentation/controller/route_controller.dart';
+import 'package:inspector_app/features/tasks/presentation/pages/task_details_page.dart';
 
 class RouteMapPage extends StatefulWidget {
   const RouteMapPage({super.key});
@@ -122,6 +123,16 @@ class _InteractiveMap extends StatelessWidget {
       );
     }).toSet();
 
+    // Create polyline connecting stops in the sequence order
+    final routePathPolyline = Polyline(
+      polylineId: const PolylineId('route_path'),
+      points: validStops.map((stop) => LatLng(stop.latitude!, stop.longitude!)).toList(),
+      color: theme.colorScheme.primary,
+      width: 4,
+      geodesic: true,
+      jointType: JointType.round,
+    );
+
     return Container(
       height: 250,
       decoration: BoxDecoration(
@@ -136,6 +147,7 @@ class _InteractiveMap extends StatelessWidget {
           zoom: 12,
         ),
         markers: markers,
+        polylines: {routePathPolyline},
         myLocationEnabled: true,
         myLocationButtonEnabled: false,
         zoomControlsEnabled: false,
@@ -156,79 +168,90 @@ class _RouteStopCard extends StatelessWidget {
     final style = _RouteStopStyle.fromStatus(stop.status, theme);
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TaskDetailsPage(taskId: stop.taskId),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '${stop.order}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
-                ],
-              ),
-              child: Text(
-                '${stop.order}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    stop.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                      const SizedBox(width: 4),
-                      Text(
-                        stop.timeLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      stop.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                        const SizedBox(width: 4),
+                        Text(
+                          stop.timeLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            _StatusChip(label: style.label, color: style.badgeColor),
-            const SizedBox(width: 8),
-            IconButton.filledTonal(
-              onPressed: (stop.latitude != null && stop.longitude != null)
-                  ? () => MapLauncher.launchNavigation(
-                        latitude: stop.latitude!,
-                        longitude: stop.longitude!,
-                        title: stop.title,
-                      )
-                  : null,
-              icon: const Icon(Icons.directions_rounded, size: 20),
-              style: IconButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(40, 40),
+              const SizedBox(width: 12),
+              _StatusChip(label: style.label, color: style.badgeColor),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                onPressed: (stop.latitude != null && stop.longitude != null)
+                    ? () => MapLauncher.launchNavigation(
+                          latitude: stop.latitude!,
+                          longitude: stop.longitude!,
+                          title: stop.title,
+                        )
+                    : null,
+                icon: const Icon(Icons.directions_rounded, size: 20),
+                style: IconButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(40, 40),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

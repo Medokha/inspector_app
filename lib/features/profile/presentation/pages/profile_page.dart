@@ -166,13 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                
-                for (final metric in overview.metrics) ...<Widget>[
-                  _MetricRow(label: metric.label, value: metric.value),
-                  const SizedBox(height: 20),
-                ],
-                
-                const SizedBox(height: 24),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

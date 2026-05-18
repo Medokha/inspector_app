@@ -116,8 +116,8 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   child: Column(
                     children: <Widget>[
                       _InfoRow(label: 'الموعد المخطط', value: details.plannedDate, icon: Icons.calendar_today),
-                      const Divider(height: 24),
-                      _InfoRow(label: 'الوقت المتبقي', value: '٤ ساعات', icon: Icons.timer_outlined, valueColor: theme.colorScheme.error),
+                      // const Divider(height: 24),
+                      // _InfoRow(label: 'الوقت المتبقي', value: '٤ ساعات', icon: Icons.timer_outlined, valueColor: theme.colorScheme.error),
                     ],
                   ),
                 ),

@@ -161,16 +161,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           value: settings.offlineMapsEnabled,
                           onChanged: (value) => _update(settings.copyWith(offlineMapsEnabled: value)),
                         ),
-                        _InfoTile(
-                          label: 'حجم ذاكرة التخزين',
-                          icon: Icons.storage_outlined,
-                          value: settings.storageUsedLabel,
-                        ),
-                        _InfoTile(
-                          label: 'نسخة التطبيق',
-                          icon: Icons.info_outline,
-                          value: settings.appVersion,
-                        ),
+
                       ],
                     ),
                     const SizedBox(height: 20),
