@@ -14,8 +14,8 @@ class SupportPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Center(
-            child: Icon(Icons.support_agent_outlined, size: 80, color: Colors.blue),
+          Center(
+            child: Icon(Icons.support_agent_outlined, size: 80, color: theme.colorScheme.primary),
           ),
           const SizedBox(height: 24),
           const Text(
@@ -35,6 +35,7 @@ class SupportPage extends StatelessWidget {
             title: 'البريد الإلكتروني',
             subtitle: 'support@waqfland.gov.eg',
             icon: Icons.email_outlined,
+            color:  theme.colorScheme.primary,
             onTap: () => _launchUrl('mailto:support@waqfland.gov.eg'),
           ),
           const SizedBox(height: 16),
@@ -42,22 +43,21 @@ class SupportPage extends StatelessWidget {
             title: 'رقم الهاتف',
             subtitle: '+20 123 456 7890',
             icon: Icons.phone_outlined,
+            color:  theme.colorScheme.primary,
+
             onTap: () => _launchUrl('tel:+201234567890'),
           ),
           const SizedBox(height: 16),
           _SupportCard(
             title: 'واتساب',
             subtitle: 'تواصل مباشر عبر الواتساب',
-            icon: Icons.chat_outlined,
+            icon: Icons.chat_outlined,            color:  theme.colorScheme.primary,
+
             onTap: () => _launchUrl('https://wa.me/201234567890'),
           ),
           
           const SizedBox(height: 48),
-          const Text(
-            'ساعات العمل: من الأحد إلى الخميس\n٩:٠٠ صباحاً - ٥:٠٠ مساءً',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
+
         ],
       ),
     );
@@ -75,12 +75,14 @@ class _SupportCard extends StatelessWidget {
   const _SupportCard({
     required this.title,
     required this.subtitle,
+    required this.color,
     required this.icon,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
+  final Color color;
   final IconData icon;
   final VoidCallback onTap;
 
@@ -99,7 +101,7 @@ class _SupportCard extends StatelessWidget {
             color: Colors.blue.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Colors.blue),
+          child: Icon(icon, color:color),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 13)),
