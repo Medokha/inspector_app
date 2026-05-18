@@ -12,6 +12,7 @@ class NotificationItemEntity {
     required this.timeLabel,
     required this.type,
     required this.isUnread,
+    this.url,
     this.createdAt,
   });
 
@@ -21,5 +22,6 @@ class NotificationItemEntity {
   final String timeLabel;
   final NotificationType type;
   final bool isUnread;
+  final String? url;
   final DateTime? createdAt;
 }

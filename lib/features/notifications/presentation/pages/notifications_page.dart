@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:inspector_app/features/notifications/presentation/controller/notifications_controller.dart';
+import 'package:inspector_app/features/tasks/presentation/pages/task_details_page.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -84,6 +85,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         if (item.isUnread) {
                           _controller.markAsRead(item.id);
                         }
+                        
+                        final taskId = _extractTaskId(item.url);
+                        if (taskId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => TaskDetailsPage(taskId: taskId),
+                            ),
+                          );
+                        }
                       },
                     );
                   },
@@ -99,6 +110,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<NotificationItemEntity> _filtered(List<NotificationItemEntity> items) {
     if (_filter == null) return items;
     return items.where((item) => item.type == _filter).toList();
+  }
+
+  String? _extractTaskId(String? url) {
+    if (url == null || url.isEmpty) return null;
+    final regExp = RegExp(r'[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}');
+    final match = regExp.firstMatch(url);
+    return match?.group(0);
   }
 }
 
@@ -154,6 +172,25 @@ class _NotificationTile extends StatelessWidget {
     final theme = Theme.of(context);
     final isUnread = item.isUnread;
 
+    final Color typeColor;
+    final IconData typeIcon;
+
+    switch (item.type) {
+      case NotificationType.task:
+        typeColor = theme.colorScheme.primary;
+        typeIcon = Icons.assignment_outlined;
+        break;
+      case NotificationType.report:
+        typeColor = theme.colorScheme.secondary;
+        typeIcon = Icons.description_outlined;
+        break;
+      case NotificationType.general:
+      default:
+        typeColor = theme.colorScheme.tertiary;
+        typeIcon = Icons.notifications_none_outlined;
+        break;
+    }
+
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -166,12 +203,12 @@ class _NotificationTile extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: (item.type == NotificationType.task ? theme.colorScheme.primary : theme.colorScheme.secondary).withOpacity(0.1),
+                  color: typeColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  item.type == NotificationType.task ? Icons.assignment_outlined : Icons.description_outlined,
-                  color: item.type == NotificationType.task ? theme.colorScheme.primary : theme.colorScheme.secondary,
+                  typeIcon,
+                  color: typeColor,
                   size: 24,
                 ),
               ),
@@ -202,7 +239,16 @@ class _NotificationTile extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    if (item.body.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        item.body,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),

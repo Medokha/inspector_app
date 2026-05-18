@@ -12,13 +12,15 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     final list = await _remote.getNotifications();
     return list.map((json) {
       final createdAt = DateTime.tryParse(json['createdAt']?.toString() ?? '');
+      final title = json['title']?.toString() ?? '';
       return NotificationItemEntity(
         id: json['id']?.toString() ?? '',
-        title: json['title']?.toString() ?? '',
+        title: title,
         body: json['body']?.toString() ?? '',
         timeLabel: _formatTimeLabel(createdAt),
-        type: _parseType(json['type']?.toString()),
+        type: _parseType(json['type']?.toString(), title),
         isUnread: !(json['isRead'] as bool? ?? true),
+        url: json['url']?.toString(),
         createdAt: createdAt,
       );
     }).toList();
@@ -44,9 +46,15 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  NotificationType _parseType(String? type) {
+  NotificationType _parseType(String? type, String title) {
     if (type == 'task') return NotificationType.task;
     if (type == 'report') return NotificationType.report;
+    
+    // Fallback: parse based on title if type is not recognized or not provided
+    if (title.contains('تقرير')) return NotificationType.report;
+    if (title.contains('مهمة') || title.contains('مهام') || title.contains('اعتماد') || title.contains('صيانة') || title.contains('تنبيه')) {
+      return NotificationType.task;
+    }
     return NotificationType.general;
   }
 }
