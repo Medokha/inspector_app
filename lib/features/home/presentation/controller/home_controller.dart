@@ -7,6 +7,8 @@ import 'package:inspector_app/features/home/domain/usecases/get_home_overview_us
 import 'package:inspector_app/features/tasks/data/services/inspector_tracking_service.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
 
+import 'package:inspector_app/core/notifications/notification_service.dart';
+
 class HomeController extends ChangeNotifier {
   HomeController({
     required GetHomeOverviewUseCase getOverview,
@@ -24,6 +26,7 @@ class HomeController extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   Timer? _timer;
+  StreamSubscription? _notificationSubscription;
 
   HomeOverview? get overview => _overview;
   bool get isLoading => _isLoading;
@@ -59,9 +62,17 @@ class HomeController extends ChangeNotifier {
     _timer = Timer.periodic(const Duration(seconds: 30), (_) => load());
   }
 
+  void startListeningToNotifications() {
+    _notificationSubscription?.cancel();
+    _notificationSubscription = NotificationService().onNotificationReceived.listen((_) {
+      load(); // Refresh home overview when a new notification arrives
+    });
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 }

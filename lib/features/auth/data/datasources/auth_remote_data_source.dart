@@ -28,6 +28,48 @@ class AuthRemoteDataSource {
       },
     );
   }
+
+  Future<void> logout(String token) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/Auth/logout');
+
+    final response = await _client.post(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // We don't necessarily throw here on logout failure, 
+      // but we could log it.
+    }
+  }
+
+  Future<void> changePassword({
+    required String token,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/Auth/change-password');
+
+    final response = await _client.post(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final body = jsonDecode(response.body);
+      throw AuthException(body['message'] ?? 'فشل تغيير كلمة المرور', statusCode: response.statusCode);
+    }
+  }
 }
 
 class AuthException implements Exception {
