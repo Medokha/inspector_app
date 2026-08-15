@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/home/presentation/controller/home_controller.dart';
+import 'package:inspector_app/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
 import 'package:inspector_app/features/tasks/presentation/pages/task_details_page.dart';
@@ -53,6 +55,7 @@ class _HomePageState extends State<HomePage> {
         }
 
         return SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: ScreenInsets.bottom(context, extra: 12)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -87,8 +90,13 @@ class _HomePageState extends State<HomePage> {
                       _HeaderSection(
                         name: overview?.inspectorName ?? 'المفتش',
                         region: overview?.region ?? 'المنطقة',
-                        unreadCount: overview?.unreadNotifications ?? 0,
-                        onOpenNotifications: widget.onOpenNotifications,
+                        onOpenNotifications: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                          );
+                          await inspectorRealtimeService().refreshUnreadBadge();
+                          await _controller.load();
+                        },
                       ),
                       const SizedBox(height: 40),
                       Row(
@@ -216,12 +224,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _openTaskDetails(TaskEntity task) {
-    Navigator.of(context).push(
+  Future<void> _openTaskDetails(TaskEntity task) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TaskDetailsPage(taskId: task.id),
       ),
     );
+    await _controller.load();
   }
 }
 
@@ -229,13 +238,11 @@ class _HeaderSection extends StatelessWidget {
   const _HeaderSection({
     required this.name,
     required this.region,
-    required this.unreadCount,
     required this.onOpenNotifications,
   });
 
   final String name;
   final String region;
-  final int unreadCount;
   final VoidCallback onOpenNotifications;
 
   @override
@@ -279,48 +286,53 @@ class _HeaderSection extends StatelessWidget {
             ],
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: onOpenNotifications,
-                icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
-              ),
-            ),
-            if (unreadCount > 0)
-              Positioned(
-                top: -2,
-                right: -2,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
+        ValueListenableBuilder<int>(
+          valueListenable: inspectorRealtimeService().unreadBadge,
+          builder: (context, unreadCount, _) {
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.secondary,
+                    color: Colors.white.withOpacity(0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: theme.colorScheme.primary, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
-                  child: Text(
-                    '$unreadCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  child: IconButton(
+                    onPressed: onOpenNotifications,
+                    icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
                   ),
                 ),
-              ),
-          ],
+                if (unreadCount > 0)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: theme.colorScheme.primary, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );

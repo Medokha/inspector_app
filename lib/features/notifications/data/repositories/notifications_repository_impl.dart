@@ -1,45 +1,38 @@
+import 'package:inspector_app/core/network/api_client.dart';
+import 'package:inspector_app/core/network/api_mappers.dart';
 import 'package:inspector_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:inspector_app/features/notifications/domain/repositories/notifications_repository.dart';
 
 class NotificationsRepositoryImpl implements NotificationsRepository {
+  NotificationsRepositoryImpl(this._api);
+
+  final ApiClient _api;
+
   @override
   Future<List<NotificationItemEntity>> getNotifications() async {
-    return _notifications;
+    final json = await _api.get('/api/Notifications/me');
+    final items = json is List ? JsonMap.mapList(json) : JsonMap.mapList(JsonMap.map(json)['items']);
+    return items.map(ApiMappers.notification).toList();
   }
 
   @override
   Future<int> getUnreadCount() async {
-    return _notifications.where((item) => item.isUnread).length;
+    final json = await _api.get('/api/Notifications/me');
+    if (json is Map) {
+      final count = json['unreadCount'];
+      if (count is num) return count.toInt();
+    }
+    final items = await getNotifications();
+    return items.where((item) => item.isUnread).length;
+  }
+
+  @override
+  Future<void> markAsRead(String id) {
+    return _api.patch('/api/Notifications/$id/read');
+  }
+
+  @override
+  Future<void> markAllAsRead() {
+    return _api.post('/api/Notifications/me/read-all');
   }
 }
-
-final List<NotificationItemEntity> _notifications = <NotificationItemEntity>[
-  NotificationItemEntity(
-    id: 'n1',
-    title: 'تم رفض تقرير مستودع الأنبار - الصور غير واضحة برجاء إعادة الزيارة',
-    timeLabel: 'منذ ساعتين',
-    type: NotificationType.report,
-    isUnread: true,
-  ),
-  NotificationItemEntity(
-    id: 'n2',
-    title: 'مهمة جديدة لمركز الأوقاف - الرصافة، الموعد اليوم ٢:٠٠ م',
-    timeLabel: 'منذ ٣ س',
-    type: NotificationType.task,
-    isUnread: true,
-  ),
-  NotificationItemEntity(
-    id: 'n3',
-    title: 'تذكير: مهمة قاربت على الانتهاء لمسجد الرحمن خلال ساعتين',
-    timeLabel: 'منذ ٥ س',
-    type: NotificationType.general,
-    isUnread: false,
-  ),
-  NotificationItemEntity(
-    id: 'n4',
-    title: 'تم اعتماد تقرير مدرسة الكاظمية من المدير',
-    timeLabel: 'أمس',
-    type: NotificationType.report,
-    isUnread: false,
-  ),
-];

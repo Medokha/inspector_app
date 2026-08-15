@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/localization/app_localizations.dart';
+import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/ui/screen_insets.dart';
+import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
+import 'package:inspector_app/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:inspector_app/features/settings/domain/entities/app_settings.dart';
 import 'package:inspector_app/features/settings/presentation/controller/settings_controller.dart';
+import 'package:inspector_app/features/settings/presentation/pages/how_to_use_page.dart';
+import 'package:inspector_app/features/settings/presentation/pages/support_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -23,7 +30,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    // لا تُغلق الـ SettingsController المشترك — يستخدمه MaterialApp لتبديل الثيم.
     super.dispose();
   }
 
@@ -34,6 +41,10 @@ class _SettingsPageState extends State<SettingsPage> {
       animation: _controller,
       builder: (context, child) {
         final settings = _controller.settings;
+        final session = currentAuthSession();
+        final displayName = (session.name == null || session.name!.isEmpty) ? 'مفتش' : session.name!;
+        final displayEmail = session.email ?? '';
+        final initials = session.initials;
         return Scaffold(
           appBar: AppBar(
             title: const Text('الإعدادات'),
@@ -41,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
           body: settings == null
               ? const Center(child: CircularProgressIndicator())
               : ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: ScreenInsets.list(context, horizontal: 20, top: 16, extraBottom: 40),
                   children: <Widget>[
                     // User Header Card
                     Card(
@@ -53,7 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               radius: 36,
                               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
                               child: Text(
-                                'أخ',
+                                initials,
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   color: theme.colorScheme.primary,
                                   fontWeight: FontWeight.w900,
@@ -62,12 +73,12 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'أحمد النجفي',
+                              displayName,
                               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'inspector@waqf.iq',
+                              displayEmail.isEmpty ? '—' : displayEmail,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface.withOpacity(0.5),
                                 fontWeight: FontWeight.w500,
@@ -140,14 +151,31 @@ class _SettingsPageState extends State<SettingsPage> {
                       title: 'أخرى',
                       children: [
                         _ActionTile(
-                          label: 'تغيير كلمة المرور',
-                          icon: Icons.lock_outline,
-                          onTap: () {},
+                          label: 'كيفية الاستخدام',
+                          icon: Icons.menu_book_outlined,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const HowToUsePage()),
+                            );
+                          },
                         ),
                         _ActionTile(
                           label: 'الدعم الفني',
                           icon: Icons.support_agent_outlined,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const SupportPage()),
+                            );
+                          },
+                        ),
+                        _ActionTile(
+                          label: AppLocalizations.of(context).resetPasswordTitle,
+                          icon: Icons.lock_reset_outlined,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              SlideUpPageRoute(child: const ResetPasswordPage()),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -156,7 +184,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: _logout,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           side: BorderSide(color: theme.colorScheme.error.withOpacity(0.5)),
@@ -176,7 +204,24 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _update(AppSettings settings) {
-    _controller.update(settings);
+    _controller.update(settings).catchError((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذر حفظ الإعدادات'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
+  }
+
+  Future<void> _logout() async {
+    await logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      FadePageRoute(child: const LoginPage()),
+      (route) => false,
+    );
   }
 }
 
@@ -231,9 +276,8 @@ class _SettingsSwitch extends StatelessWidget {
     return SwitchListTile.adaptive(
       value: value,
       onChanged: onChanged,
-      activeColor: theme.colorScheme.primary,
       title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-      secondary: Icon(icon, color: theme.colorScheme.primary.withOpacity(0.7), size: 20),
+      secondary: Icon(icon, color: theme.colorScheme.primary.withValues(alpha: 0.75), size: 20),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
     );
   }

@@ -9,13 +9,12 @@ http.Client createHttpClient() {
     return http.Client();
   }
 
-  final ioClient = HttpClient();
+  final ioClient = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 8)
+    ..idleTimeout = const Duration(seconds: 15);
 
   if (kDebugMode) {
-    ioClient.badCertificateCallback = (cert, host, port) {
-      final isDevHost = host == 'localhost' || host == '10.0.2.2' || host == '127.0.0.1';
-      return isDevHost;
-    };
+    ioClient.badCertificateCallback = (cert, host, port) => true;
   }
 
   return IOClient(ioClient);

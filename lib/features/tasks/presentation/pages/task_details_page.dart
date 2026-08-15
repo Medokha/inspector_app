@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_step_entity.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/task_details_controller.dart';
 import 'package:inspector_app/features/tasks/presentation/pages/report_page.dart';
+import 'package:inspector_app/features/tasks/presentation/widgets/task_location_map_preview.dart';
 
 class TaskDetailsPage extends StatefulWidget {
   const TaskDetailsPage({super.key, required this.taskId});
@@ -45,8 +49,168 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
           body: _controller.isLoading && details == null
               ? const Center(child: CircularProgressIndicator())
               : details == null
-                  ? const Center(child: Text('تعذر تحميل المهمة'))
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_controller.error ?? 'تعذر تحميل المهمة', textAlign: TextAlign.center),
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              onPressed: () => _controller.load(widget.taskId),
+                              child: const Text('إعادة المحاولة'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
                   : _buildBody(context, details),
+        );
+      },
+    );
+  }
+
+  Future<void> _openNavigation(TaskDetailsEntity details) async {
+    if (!details.hasLocation) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا توجد إحداثيات جغرافية لهذه المهمة'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final lat = details.latitude!;
+    final lng = details.longitude!;
+    final uris = <Uri>[
+      Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng'),
+      Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=16/$lat/$lng'),
+      Uri.parse('geo:$lat,$lng?q=$lat,$lng'),
+    ];
+
+    for (final uri in uris) {
+      try {
+        final launched = await launchUrl(
+          uri,
+          mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+          webOnlyWindowName: kIsWeb ? '_blank' : null,
+        );
+        if (launched) return;
+      } catch (_) {
+        // جرّب الرابط التالي
+      }
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تعذر فتح تطبيق الخرائط'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showReportSheet(TaskDetailsEntity details) {
+    final report = details.report;
+    if (report == null) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.72,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          builder: (context, controller) {
+            return ListView(
+              controller: controller,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+              children: <Widget>[
+                Text('التقرير المرفوع', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 16),
+                _ReportField(label: 'الحالة العامة', value: report.generalCondition),
+                _ReportField(label: 'درجة الجودة', value: '${report.qualityScore} / 5'),
+                _ReportField(label: 'مخالفات', value: report.hasViolations ? 'نعم' : 'لا'),
+                if (report.reportNotes != null && report.reportNotes!.isNotEmpty)
+                  _ReportField(label: 'ملاحظات', value: report.reportNotes!),
+                if (report.rejectionReason != null && report.rejectionReason!.isNotEmpty)
+                  _ReportField(label: 'سبب الرفض', value: report.rejectionReason!, danger: true),
+                if (report.photos.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 12),
+                  Text(
+                    'المرفقات (${report.photos.length})',
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 140,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: report.photos.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      itemBuilder: (context, index) {
+                        final photo = report.photos[index];
+                        if (photo.isPdf) {
+                          return InkWell(
+                            onTap: () => launchUrl(Uri.parse(photo.url), mode: LaunchMode.externalApplication),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              width: 120,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Icon(Icons.picture_as_pdf, color: theme.colorScheme.error, size: 40),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    photo.fileName ?? 'ملف PDF',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.labelSmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: AspectRatio(
+                            aspectRatio: 1,
+                            child: Image.network(
+                              photo.url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.broken_image_outlined),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ] else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text('لا توجد مرفقات'),
+                  ),
+              ],
+            );
+          },
         );
       },
     );
@@ -56,6 +220,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     final theme = Theme.of(context);
 
     return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: ScreenInsets.bottom(context, extra: 24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -114,9 +279,24 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   icon: Icons.assignment_outlined,
                   child: Column(
                     children: <Widget>[
-                      _InfoRow(label: 'الموعد المخطط', value: details.plannedDate, icon: Icons.calendar_today),
+                      _InfoRow(label: 'الموعد المخطط', value: details.plannedDate.isEmpty ? 'غير محدد' : details.plannedDate, icon: Icons.calendar_today),
                       const Divider(height: 24),
-                      _InfoRow(label: 'الوقت المتبقي', value: '٤ ساعات', icon: Icons.timer_outlined, valueColor: theme.colorScheme.error),
+                      _InfoRow(
+                        label: details.isOverdue ? 'حالة الموعد' : 'الوقت المتبقي',
+                        value: details.remainingLabel,
+                        icon: Icons.timer_outlined,
+                        valueColor: details.isOverdue ? theme.colorScheme.error : null,
+                      ),
+                      if (details.description != null && details.description!.isNotEmpty) ...<Widget>[
+                        const Divider(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            details.description!,
+                            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -139,46 +319,140 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                 _SectionCard(
                   title: 'الموقع الجغرافي',
                   icon: Icons.map_outlined,
-                  child: Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
-                    ),
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.location_searching, color: theme.colorScheme.primary.withOpacity(0.3), size: 32),
-                              const SizedBox(height: 12),
-                              Text(
-                                details.mapHint ?? 'انقر لفتح الخريطة الملاحية',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary.withOpacity(0.5),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (details.hasLocation)
+                        TaskLocationMapPreview(
+                          latitude: details.latitude!,
+                          longitude: details.longitude!,
+                          onOpenExternal: () => _openNavigation(details),
+                        )
+                      else
+                        Container(
+                          height: 160,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.08)),
                           ),
-                        ),
-                        Positioned.fill(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {},
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              details.mapHint ?? 'لا توجد إحداثيات لهذه المهمة',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
+                        ),
+                      if (details.hasLocation) ...<Widget>[
+                        const SizedBox(height: 10),
+                        Text(
+                          'حرّك الخريطة للمعاينة، أو اضغط ملاحة للفتح في الخرائط',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (details.hasReport) ...<Widget>[
+                  const SizedBox(height: 16),
+                  _SectionCard(
+                    title: 'التقرير المرفوع',
+                    icon: Icons.description_outlined,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _InfoRow(
+                          label: 'الحالة العامة',
+                          value: details.report!.generalCondition,
+                          icon: Icons.fact_check_outlined,
+                        ),
+                        const Divider(height: 24),
+                        _InfoRow(
+                          label: 'الجودة',
+                          value: '${details.report!.qualityScore} / 5',
+                          icon: Icons.star_outline,
+                        ),
+                        const Divider(height: 24),
+                        _InfoRow(
+                          label: 'مخالفات',
+                          value: details.report!.hasViolations ? 'نعم' : 'لا',
+                          icon: Icons.warning_amber_outlined,
+                          valueColor: details.report!.hasViolations ? theme.colorScheme.error : null,
+                        ),
+                        if (details.report!.photos.isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            height: 88,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: details.report!.photos.length.clamp(0, 6),
+                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final photo = details.report!.photos[index];
+                                if (photo.isPdf) {
+                                  return InkWell(
+                                    onTap: () => launchUrl(
+                                      Uri.parse(photo.url),
+                                      mode: LaunchMode.externalApplication,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      width: 88,
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: <Widget>[
+                                          Icon(Icons.picture_as_pdf, color: theme.colorScheme.error),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'PDF',
+                                            style: theme.textTheme.labelSmall,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AspectRatio(
+                                    aspectRatio: 1,
+                                    child: Image.network(
+                                      photo.url,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: theme.colorScheme.surfaceContainerHighest,
+                                        child: const Icon(Icons.image_not_supported_outlined),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed: () => _showReportSheet(details),
+                          icon: const Icon(Icons.visibility_outlined),
+                          label: const Text('عرض التقرير بالكامل'),
                         ),
                       ],
                     ),
                   ),
-                ),
-                if (details.inspectorNote != null) ...<Widget>[
+                ],
+                if (details.inspectorNote != null && !details.hasReport) ...<Widget>[
                   const SizedBox(height: 16),
                   _SectionCard(
                     title: 'ملاحظات إضافية',
@@ -187,7 +461,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.secondary.withOpacity(0.05),
+                        color: theme.colorScheme.secondary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -197,38 +471,135 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ReportPage()),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                if (details.isTracking) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    icon: const Icon(Icons.description_outlined),
-                    label: const Text('بدء رفع التقرير الفني', style: TextStyle(fontWeight: FontWeight.w900)),
+                    child: Row(
+                      children: [
+                        Icon(Icons.share_location_rounded, color: theme.colorScheme.primary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'التتبع يعمل — الإدارة ترى موقعك مباشرة على الخريطة',
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                ],
+                const SizedBox(height: 32),
+                if (details.canStart)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _controller.isStarting
+                          ? null
+                          : () async {
+                              final ok = await _controller.start(widget.taskId);
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(ok ? 'تم بدء المهمة وبدأ التتبع' : (_controller.error ?? 'تعذر بدء المهمة')),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(_controller.isStarting ? 'جارٍ البدء...' : 'بدء المهمة والتتبع'),
+                    ),
+                  ),
+                if (details.canStart) const SizedBox(height: 12),
+                if (details.canSubmitReport)
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        final submitted = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) => ReportPage(taskId: widget.taskId, taskTitle: details.task.title),
+                          ),
+                        );
+                        if (submitted == true) {
+                          await _controller.load(widget.taskId);
+                        }
+                      },
+                      icon: const Icon(Icons.description_outlined),
+                      label: const Text('رفع التقرير الفني', style: TextStyle(fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                if (details.canSubmitReport) const SizedBox(height: 12),
+                if (details.hasReport) ...<Widget>[
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => _showReportSheet(details),
+                      icon: const Icon(Icons.folder_open_outlined),
+                      label: const Text('عرض التقرير المرفوع'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    ),
+                    onPressed: details.hasLocation ? () => _openNavigation(details) : null,
                     icon: const Icon(Icons.directions_rounded),
-                    label: const Text('توجيه الملاحة', style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      details.hasLocation ? 'توجيه الملاحة' : 'لا توجد إحداثيات',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 48),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportField extends StatelessWidget {
+  const _ReportField({
+    required this.label,
+    required this.value,
+    this.danger = false,
+  });
+
+  final String label;
+  final String value;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: danger ? theme.colorScheme.error : null,
+              height: 1.4,
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/features/notifications/domain/entities/notification_item.dart';
 import 'package:inspector_app/features/notifications/presentation/controller/notifications_controller.dart';
+import 'package:inspector_app/features/tasks/presentation/pages/task_details_page.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -40,6 +41,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('الإشعارات'),
+            actions: [
+              if (_controller.unreadCount > 0)
+                TextButton(
+                  onPressed: _controller.markAllRead,
+                  child: const Text('قراءة الكل'),
+                ),
+            ],
           ),
           body: Column(
             children: [
@@ -71,12 +79,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
               ),
               Expanded(
-                child: ListView.separated(
+                child: items.isEmpty
+                    ? const Center(child: Text('لا توجد إشعارات حالياً'))
+                    : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    return _NotificationTile(item: items[index]);
+                    return _NotificationTile(
+                      item: items[index],
+                      onTap: () => _openNotification(items[index]),
+                    );
                   },
                 ),
               ),
@@ -90,6 +103,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<NotificationItemEntity> _filtered(List<NotificationItemEntity> items) {
     if (_filter == null) return items;
     return items.where((item) => item.type == _filter).toList();
+  }
+
+  Future<void> _openNotification(NotificationItemEntity item) async {
+    if (item.isUnread) {
+      await _controller.markRead(item.id);
+    }
+    final taskId = item.taskId;
+    if (taskId == null || taskId.isEmpty || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => TaskDetailsPage(taskId: taskId)),
+    );
   }
 }
 
@@ -135,9 +159,10 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.item});
+  const _NotificationTile({required this.item, required this.onTap});
 
   final NotificationItemEntity item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +171,7 @@ class _NotificationTile extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

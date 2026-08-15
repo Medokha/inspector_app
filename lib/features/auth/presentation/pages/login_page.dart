@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:inspector_app/core/config/api_config.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
-import 'package:inspector_app/features/auth/presentation/controller/login_controller.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/theme/app_theme.dart';
+import 'package:inspector_app/features/auth/presentation/controller/login_controller.dart';
 import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,7 +22,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   late final LoginController _controller;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+  bool _obscurePassword = true;
+
   late AnimationController _animationController;
   late Animation<double> _formAnimation;
 
@@ -63,7 +69,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     if (!mounted) return;
 
     if (result.isSuccess) {
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(FadePageRoute(child: const MainShellPage()));
+      unawaited(startInspectorRealtime());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -83,13 +91,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     return Scaffold(
       body: Stack(
         children: [
-          // Background Decor
           Positioned(
             top: -100,
             right: -100,
             child: CircleAvatar(
               radius: 150,
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.05),
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.05),
             ),
           ),
           Positioned(
@@ -97,7 +104,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             left: -50,
             child: CircleAvatar(
               radius: 100,
-              backgroundColor: theme.colorScheme.secondary.withOpacity(0.05),
+              backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.05),
             ),
           ),
           SafeArea(
@@ -117,35 +124,80 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           children: [
                             Hero(
                               tag: 'app_logo',
-                              child: Image.asset(
-                                'assets/images/logo.png',
-                                height: 100,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(Icons.verified, size: 80, color: theme.colorScheme.primary);
-                                },
+                              child: Material(
+                                color: Colors.transparent,
+                                child: Center(
+                                  child: Container(
+                                    width: 180,
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(24),
+                                      boxShadow: <BoxShadow>[
+                                        BoxShadow(
+                                          color: AppTheme.primaryNavy.withValues(alpha: 0.12),
+                                          blurRadius: 24,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                      border: Border.all(
+                                        color: AppTheme.primaryNavy.withValues(alpha: 0.08),
+                                      ),
+                                    ),
+                                    child: Image.asset(
+                                      'assets/images/logo.png',
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Icon(
+                                          Icons.verified,
+                                          size: 72,
+                                          color: theme.colorScheme.primary,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
+                            Text(
+                              'المفتش',
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: AppTheme.primaryNavy,
+                                letterSpacing: 0.8,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
                             Text(
                               'ديوان الوقف السني',
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: theme.colorScheme.primary,
-                                letterSpacing: 0.5,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.accentGold,
                               ),
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              strings.loginButton, // Or a generic "Welcome back"
+                              strings.loginSubtitle,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                                 fontWeight: FontWeight.w500,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 40),
-                            
+                            if (kDebugMode) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                ApiConfig.baseUrl,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                            const SizedBox(height: 32),
                             Card(
                               elevation: 0,
                               child: Padding(
@@ -164,12 +216,22 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                     const SizedBox(height: 16),
                                     TextField(
                                       controller: _passwordController,
-                                      obscureText: true,
+                                      obscureText: _obscurePassword,
                                       onSubmitted: (_) => _submit(),
                                       decoration: InputDecoration(
                                         labelText: strings.password,
-                                        prefixIcon: const Icon(Icons.lock_open_outlined),
+                                        prefixIcon: const Icon(Icons.lock_outline),
                                         hintText: '••••••••',
+                                        suffixIcon: IconButton(
+                                          onPressed: () {
+                                            setState(() => _obscurePassword = !_obscurePassword);
+                                          },
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility_outlined
+                                                : Icons.visibility_off_outlined,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 32),
@@ -190,17 +252,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            TextButton(
-                              onPressed: () {}, // Forgot password placeholder
-                              child: Text(
-                                'نسيت كلمة المرور؟',
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary.withOpacity(0.7),
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),

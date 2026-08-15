@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/tasks_controller.dart';
@@ -87,7 +88,7 @@ class _TasksPageState extends State<TasksPage> {
                     ),
                     Expanded(
                       child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, ScreenInsets.bottom(context, extra: 24)),
                         itemCount: tasks.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
@@ -110,10 +111,11 @@ class _TasksPageState extends State<TasksPage> {
     return tasks.where((task) => task.status == _filter).toList();
   }
 
-  void _openTaskDetails(TaskEntity task) {
-    Navigator.of(context).push(
+  Future<void> _openTaskDetails(TaskEntity task) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => TaskDetailsPage(taskId: task.id)),
     );
+    await _controller.load();
   }
 }
 

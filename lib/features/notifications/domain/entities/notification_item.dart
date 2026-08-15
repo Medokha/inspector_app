@@ -11,6 +11,7 @@ class NotificationItemEntity {
     required this.timeLabel,
     required this.type,
     required this.isUnread,
+    this.taskId,
   });
 
   final String id;
@@ -18,4 +19,16 @@ class NotificationItemEntity {
   final String timeLabel;
   final NotificationType type;
   final bool isUnread;
+  final String? taskId;
+
+  NotificationItemEntity copyWith({bool? isUnread}) {
+    return NotificationItemEntity(
+      id: id,
+      title: title,
+      timeLabel: timeLabel,
+      type: type,
+      isUnread: isUnread ?? this.isUnread,
+      taskId: taskId,
+    );
+  }
 }

@@ -11,6 +11,9 @@ class RouteStopEntity {
     required this.status,
     required this.timeLabel,
     required this.distanceLabel,
+    this.taskId,
+    this.latitude,
+    this.longitude,
   });
 
   final int order;
@@ -18,4 +21,9 @@ class RouteStopEntity {
   final RouteStopStatus status;
   final String timeLabel;
   final String distanceLabel;
+  final String? taskId;
+  final double? latitude;
+  final double? longitude;
+
+  bool get hasLocation => latitude != null && longitude != null;
 }

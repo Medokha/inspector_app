@@ -1,0 +1,13 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "waqf-inspector-app",
+          "appId": "",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
+  }
+}

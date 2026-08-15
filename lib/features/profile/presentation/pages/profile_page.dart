@@ -4,6 +4,8 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/features/profile/domain/entities/profile_overview.dart';
 import 'package:inspector_app/features/profile/domain/entities/report_item.dart';
 import 'package:inspector_app/features/profile/presentation/controller/profile_controller.dart';
+import 'package:inspector_app/features/tasks/presentation/pages/task_details_page.dart';
+import 'package:inspector_app/features/tasks/presentation/pages/tasks_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.onOpenSettings});
@@ -41,7 +43,19 @@ class _ProfilePageState extends State<ProfilePage> {
         }
 
         if (overview == null) {
-          return const Center(child: Text('لا توجد بيانات متاحة'));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_controller.error ?? 'لا توجد بيانات متاحة', textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  FilledButton(onPressed: _controller.load, child: const Text('إعادة المحاولة')),
+                ],
+              ),
+            ),
+          );
         }
 
         return Scaffold(
@@ -54,7 +68,10 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-          body: _buildBody(context, overview),
+          body: RefreshIndicator(
+            onRefresh: _controller.load,
+            child: _buildBody(context, overview),
+          ),
         );
       },
     );
@@ -150,7 +167,7 @@ class _ProfilePageState extends State<ProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'إحصائيات الأداء - مايو ٢٠٢٦',
+                  'إحصائيات الأداء',
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 16),
@@ -179,14 +196,27 @@ class _ProfilePageState extends State<ProfilePage> {
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const TasksPage()),
+                        );
+                      },
                       child: const Text('عرض الكل'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 for (final report in overview.recentReports) ...<Widget>[
-                  _ReportTile(item: report),
+                  _ReportTile(
+                    item: report,
+                    onTap: report.id.isEmpty
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => TaskDetailsPage(taskId: report.id)),
+                            );
+                          },
+                  ),
                   const SizedBox(height: 12),
                 ],
               ],
@@ -306,9 +336,10 @@ class _MetricRow extends StatelessWidget {
 }
 
 class _ReportTile extends StatelessWidget {
-  const _ReportTile({required this.item});
+  const _ReportTile({required this.item, this.onTap});
 
   final ReportItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +348,7 @@ class _ReportTile extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

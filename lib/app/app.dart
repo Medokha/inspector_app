@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
-import 'package:inspector_app/features/splash/presentation/pages/splash_page.dart';
 import 'package:inspector_app/features/settings/presentation/controller/settings_controller.dart';
+import 'package:inspector_app/features/splash/presentation/pages/splash_page.dart';
 
 class App extends StatefulWidget {
   const App({super.key, this.showSplash = true, this.homeOverride});
@@ -30,7 +31,7 @@ class _AppState extends State<App> {
 
   @override
   void dispose() {
-    _settingsController.dispose();
+    // الـ SettingsController مشترك على مستوى التطبيق — لا يُتلف هنا.
     super.dispose();
   }
 
@@ -55,6 +56,24 @@ class _AppState extends State<App> {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          builder: (context, child) {
+            final theme = Theme.of(context);
+            final navColor = theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness:
+                    theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+                statusBarBrightness:
+                    theme.brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+                systemNavigationBarColor: navColor,
+                systemNavigationBarIconBrightness:
+                    theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+                systemNavigationBarContrastEnforced: true,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           home: home,
         );
       },

@@ -29,7 +29,16 @@ class SettingsController extends ChangeNotifier {
   }
 
   Future<void> update(AppSettings settings) async {
-    _settings = await _updateSettings(settings);
+    final previous = _settings;
+    _settings = settings;
     notifyListeners();
+    try {
+      _settings = await _updateSettings(settings);
+      notifyListeners();
+    } catch (_) {
+      _settings = previous;
+      notifyListeners();
+      rethrow;
+    }
   }
 }

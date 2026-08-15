@@ -1,52 +1,48 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
-import 'package:inspector_app/core/config/api_config.dart';
+import 'package:inspector_app/core/network/api_client.dart';
+import 'package:inspector_app/core/network/api_mappers.dart';
 
 class AuthRemoteDataSource {
-  AuthRemoteDataSource(this._client);
+  AuthRemoteDataSource(this._api);
 
-  final http.Client _client;
+  final ApiClient _api;
 
-  Future<Map<String, dynamic>> login({required String email, required String password}) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/Auth/login');
-
-    final response = await _client.post(
-      uri,
-      headers: <String, String>{'Content-Type': 'application/json'},
-      body: jsonEncode(<String, String>{
+  Future<Map<String, dynamic>> login({required String email, required String password}) {
+    return _api.post(
+      '/api/Auth/login',
+      body: <String, String>{
         'email': email,
         'password': password,
-      }),
+      },
     );
+  }
 
-    final bodyText = response.body;
-    Map<String, dynamic> json;
-    try {
-      json = bodyText.isEmpty ? <String, dynamic>{} : (jsonDecode(bodyText) as Map<String, dynamic>);
-    } catch (_) {
-      json = <String, dynamic>{'message': bodyText};
-    }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return <String, dynamic>{
-        'statusCode': response.statusCode,
-        ...json,
-      };
-    }
-
-    final message = (json['message'] ?? json['error'] ?? 'Login failed').toString();
-    throw AuthException(message, statusCode: response.statusCode);
+  Future<Map<String, dynamic>> resetPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _api.post(
+      '/api/Auth/change-password',
+      body: <String, String>{
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      },
+    );
   }
 }
 
 class AuthException implements Exception {
-  AuthException(this.message, {required this.statusCode});
+  AuthException(this.message, {this.statusCode});
 
   final String message;
-  final int statusCode;
+  final int? statusCode;
 
   @override
-  String toString() => 'AuthException($statusCode): $message';
+  String toString() => message;
+}
+
+AuthException toAuthException(Object error) {
+  if (error is ApiException) {
+    return AuthException(error.message, statusCode: error.statusCode);
+  }
+  return AuthException(JsonMap.str(error, 'Request failed'));
 }

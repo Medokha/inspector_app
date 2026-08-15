@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/theme/app_theme.dart';
+import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
 
 class SplashPage extends StatefulWidget {
@@ -22,27 +25,31 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1500));
-    
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.easeIn)),
+      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.55, curve: Curves.easeOut)),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack)),
+    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack)),
     );
 
     _textAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.5, 1.0, curve: Curves.easeIn)),
+      CurvedAnimation(parent: _controller, curve: const Interval(0.45, 1.0, curve: Curves.easeIn)),
     );
 
     _controller.forward();
 
-    Timer(const Duration(milliseconds: 2500), () {
+    Timer(const Duration(milliseconds: 2400), () async {
+      if (!mounted) return;
+      final authenticated = currentAuthSession().isAuthenticated;
+      if (authenticated) {
+        unawaited(startInspectorRealtime());
+      }
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        FadePageRoute(child: const MainShellPage()),
+        FadePageRoute(child: authenticated ? const MainShellPage() : const LoginPage()),
       );
     });
   }
@@ -59,130 +66,114 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background Gradient
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withOpacity(0.8),
-                    theme.colorScheme.tertiary,
-                  ],
-                ),
-              ),
-            ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: <Color>[
+              Color(0xFF161F30),
+              AppTheme.primaryNavy,
+              Color(0xFF0E1420),
+            ],
           ),
-          // Subtle Pattern Overlay (Optional, using Opacity for now)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.05,
-              child: Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/logo.png'),
-                    repeat: ImageRepeat.repeat,
-                    scale: 4,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Center(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo with Glassmorphism
-                    Opacity(
-                      opacity: _fadeAnimation.value,
-                      child: Transform.scale(
-                        scale: _scaleAnimation.value,
-                        child: Hero(
-                          tag: 'app_logo',
+        ),
+        child: SafeArea(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Column(
+                children: <Widget>[
+                  const Spacer(flex: 2),
+                  Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: Hero(
+                        tag: 'app_logo',
+                        child: Material(
+                          color: Colors.transparent,
                           child: Container(
-                            padding: const EdgeInsets.all(32),
+                            width: 220,
+                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.15),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.2),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: <BoxShadow>[
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 30,
-                                  spreadRadius: 10,
+                                  color: Colors.black.withValues(alpha: 0.28),
+                                  blurRadius: 28,
+                                  offset: const Offset(0, 14),
                                 ),
                               ],
                             ),
                             child: Image.asset(
                               'assets/images/logo.png',
-                              width: 160,
-                              height: 160,
+                              fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.verified, size: 100, color: Colors.white);
+                                return Icon(Icons.verified, size: 96, color: theme.colorScheme.primary);
                               },
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 48),
-                    // Animated Text
-                    Opacity(
-                      opacity: _textAnimation.value,
-                      child: Column(
-                        children: [
-                          Text(
-                            'ديوان الوقف السني',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
+                  ),
+                  const SizedBox(height: 36),
+                  Opacity(
+                    opacity: _textAnimation.value,
+                    child: Column(
+                      children: <Widget>[
+                        Text(
+                          'المفتش',
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.accentGold,
+                            letterSpacing: 1.2,
+                            height: 1.1,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sunni Endowment Office',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1,
-                            ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'ديوان الوقف السني',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          strings.splashLoading,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 64),
-                    // Premium Progress Indicator
-                    Opacity(
-                      opacity: _textAnimation.value,
+                  ),
+                  const Spacer(flex: 2),
+                  Opacity(
+                    opacity: _textAnimation.value,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 36),
                       child: SizedBox(
-                        width: 48,
-                        height: 48,
+                        width: 42,
+                        height: 42,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.secondary,
-                          ),
-                          backgroundColor: Colors.white.withOpacity(0.1),
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accentGold),
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:inspector_app/features/home/presentation/pages/home_page.dart';
 import 'package:inspector_app/features/notifications/presentation/pages/notifications_page.dart';
@@ -24,6 +25,7 @@ class _MainShellPageState extends State<MainShellPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final pages = <Widget>[
       HomePage(
         onNavigateToTab: _setIndex,
@@ -44,38 +46,60 @@ class _MainShellPageState extends State<MainShellPage> {
       ),
     ];
 
-    return Scaffold(
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _setIndex,
-        indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: Color(0xFF006D77)),
-            label: 'الرئيسية',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment, color: Color(0xFF006D77)),
-            label: 'كل المهام',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map, color: Color(0xFF006D77)),
-            label: 'خريطة المسار',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: Color(0xFF006D77)),
-            label: 'الملف الشخصي',
-          ),
-        ],
+    final navBg = theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: navBg,
+        systemNavigationBarIconBrightness:
+            theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: pages,
+        ),
+        bottomNavigationBar: Material(
+          color: navBg,
+          elevation: 8,
+          shadowColor: Colors.black.withValues(alpha: 0.12),
+          child: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.only(bottom: 4),
+            child: NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: _setIndex,
+              backgroundColor: navBg,
+              indicatorColor: theme.colorScheme.secondary.withValues(alpha: 0.18),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: <NavigationDestination>[
+                NavigationDestination(
+                  icon: const Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home, color: theme.colorScheme.primary),
+                  label: 'الرئيسية',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.assignment_outlined),
+                  selectedIcon: Icon(Icons.assignment, color: theme.colorScheme.primary),
+                  label: 'كل المهام',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.map_outlined),
+                  selectedIcon: Icon(Icons.map, color: theme.colorScheme.primary),
+                  label: 'خريطة المسار',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person, color: theme.colorScheme.primary),
+                  label: 'الملف الشخصي',
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
