@@ -24,6 +24,7 @@ import 'package:inspector_app/features/notifications/presentation/controller/not
 import 'package:inspector_app/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:inspector_app/features/profile/domain/usecases/get_profile_overview_usecase.dart';
 import 'package:inspector_app/features/profile/presentation/controller/profile_controller.dart';
+import 'package:inspector_app/features/profile/presentation/controller/reports_controller.dart';
 import 'package:inspector_app/features/route_map/data/repositories/route_repository_impl.dart';
 import 'package:inspector_app/features/route_map/domain/usecases/get_route_stops_usecase.dart';
 import 'package:inspector_app/features/route_map/presentation/controller/route_controller.dart';
@@ -130,6 +131,11 @@ ProfileController createProfileController() {
   final repository = ProfileRepositoryImpl(_apiClient, _authSession);
   final useCase = GetProfileOverviewUseCase(repository);
   return ProfileController(getOverview: useCase);
+}
+
+ReportsController createReportsController() {
+  final repository = ProfileRepositoryImpl(_apiClient, _authSession);
+  return ReportsController(repository: repository);
 }
 
 final _settingsRepository = SettingsRepositoryImpl(_apiClient);

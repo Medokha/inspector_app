@@ -79,4 +79,26 @@ class ProfileRepositoryImpl implements ProfileRepository {
       }).toList(),
     );
   }
+
+  @override
+  Future<List<ReportItem>> getReports() async {
+    final reportsRaw = await _api.get('/api/Inspectors/me/reports');
+    final reports = reportsRaw is List
+        ? JsonMap.mapList(reportsRaw)
+        : JsonMap.mapList(JsonMap.map(reportsRaw)['items']);
+
+    return reports.map((item) {
+      final status = JsonMap.str(item['status']).toLowerCase();
+      return ReportItem(
+        id: JsonMap.str(item['id']),
+        title: JsonMap.str(item['title'], 'تقرير'),
+        status: status == 'approved' || status == 'accepted'
+            ? ReportStatus.accepted
+            : status == 'rejected'
+                ? ReportStatus.rejected
+                : ReportStatus.pending,
+        dateLabel: ApiMappers.dateLabel(item['date'] ?? item['completedAt'] ?? item['createdAt']),
+      );
+    }).toList();
+  }
 }

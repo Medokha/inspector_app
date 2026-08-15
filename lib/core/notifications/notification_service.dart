@@ -39,7 +39,7 @@ class NotificationService {
         iOS: DarwinInitializationSettings(),
       );
       await _localNotifications.initialize(
-        settings: initializationSettings,
+        initializationSettings,
         onDidReceiveNotificationResponse: (details) {
           // Handle notification click when app is in foreground
         },
@@ -95,10 +95,10 @@ class NotificationService {
 
     if (notification != null) {
       _localNotifications.show(
-        id: notification.hashCode,
-        title: notification.title,
-        body: notification.body,
-        notificationDetails: NotificationDetails(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
             'High Importance Notifications',

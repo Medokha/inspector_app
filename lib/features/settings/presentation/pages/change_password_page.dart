@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
+
 import 'package:inspector_app/core/di/injection.dart';
-import 'package:inspector_app/core/network/http_client_factory.dart';
-import 'package:inspector_app/features/auth/data/datasources/auth_local_data_source.dart';
-import 'package:inspector_app/features/auth/data/datasources/auth_remote_data_source.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -35,28 +33,30 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authLocal = AuthLocalDataSource();
-      final token = await authLocal.getToken();
-      
-      final client = createHttpClient();
-      final remote = AuthRemoteDataSource(client);
-
-      await remote.changePassword(
-        token: token!,
+      final controller = createResetPasswordController();
+      final result = await controller.resetPassword(
         currentPassword: _currentPasswordController.text,
         newPassword: _newPasswordController.text,
       );
 
-      if (mounted) {
+      if (!mounted) return;
+      if (result.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح'), backgroundColor: Colors.green),
         );
         Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'تعذر تغيير كلمة المرور'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('AuthException: ', '')), backgroundColor: Colors.red),
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -66,7 +66,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('تغيير كلمة المرور'),
@@ -83,7 +82,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 style: TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 32),
-              
               TextFormField(
                 controller: _currentPasswordController,
                 obscureText: _obscureCurrent,
@@ -98,7 +96,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 validator: (value) => value!.isEmpty ? 'يرجى إدخال كلمة المرور الحالية' : null,
               ),
               const SizedBox(height: 20),
-              
               TextFormField(
                 controller: _newPasswordController,
                 obscureText: _obscureNew,
@@ -117,7 +114,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 },
               ),
               const SizedBox(height: 20),
-              
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirm,
@@ -135,7 +131,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 },
               ),
               const SizedBox(height: 48),
-              
               FilledButton(
                 onPressed: _isLoading ? null : _submit,
                 style: FilledButton.styleFrom(
@@ -143,7 +138,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: _isLoading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('تحديث كلمة المرور', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],

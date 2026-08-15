@@ -14,8 +14,19 @@ class TasksRepositoryImpl implements TasksRepository {
   final ApiClient _api;
 
   @override
-  Future<List<TaskEntity>> getTasks() async {
-    final json = JsonMap.map(await _api.get('/api/Tasks', query: <String, String>{'pageSize': '50'}));
+  Future<List<TaskEntity>> getTasks({
+    String? date,
+    String? status,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    final query = <String, String>{
+      'page': '$page',
+      'pageSize': '$pageSize',
+      if (date != null && date.isNotEmpty) 'date': date,
+      if (status != null && status.isNotEmpty) 'status': status,
+    };
+    final json = JsonMap.map(await _api.get('/api/Tasks', query: query));
     return JsonMap.mapList(json['items']).map(ApiMappers.task).toList();
   }
 

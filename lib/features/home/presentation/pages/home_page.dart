@@ -211,7 +211,7 @@ class _HomePageState extends State<HomePage> {
                             onTap: () async {
                               if (notification.isUnread) {
                                 final notifyController = createNotificationsController();
-                                await notifyController.markAsRead(notification.id);
+                                await notifyController.markRead(notification.id);
                                 _controller.load(); // Refresh home
                               }
                             },

@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:connectivity_plus/connectivity_plus.dart';
+
 import 'package:inspector_app/core/database/database_service.dart';
 import 'package:inspector_app/features/tasks/data/datasources/tasks_remote_data_source.dart';
 
+/// مزامنة بسيطة عند الطلب — بدون اعتماد على connectivity_plus.
 class SyncService {
   SyncService(this._db, this._remote);
 
@@ -12,13 +13,7 @@ class SyncService {
   bool _isSyncing = false;
 
   void init() {
-    Connectivity().onConnectivityChanged.listen((results) {
-      // Check if any of the results indicate we have internet
-      final hasInternet = results.any((result) => result != ConnectivityResult.none);
-      if (hasInternet) {
-        syncPendingReports();
-      }
-    });
+    // لا يوجد مستمع شبكة هنا؛ يمكن استدعاء syncPendingReports يدوياً.
   }
 
   Future<void> syncPendingReports() async {
@@ -30,12 +25,11 @@ class SyncService {
       for (final report in reports) {
         final id = report['id'] as int;
         final taskId = report['taskId'] as String;
-        
+
         try {
-          // 1. Upload Report Data
           await _remote.submitReport(
             taskId,
-            {
+            <String, dynamic>{
               'generalCondition': report['generalCondition'],
               'qualityScore': report['qualityScore'],
               'hasViolations': report['hasViolations'] == 1,
@@ -43,8 +37,10 @@ class SyncService {
             },
           );
 
-          // 2. Upload Photos if any
-          final List<String> photoPaths = (jsonDecode(report['photoPaths'] as String) as List).cast<String>();
+          final photoPathsRaw = report['photoPaths'];
+          final List<String> photoPaths = photoPathsRaw is String
+              ? (jsonDecode(photoPathsRaw) as List).cast<String>()
+              : const <String>[];
           for (final path in photoPaths) {
             final file = File(path);
             if (await file.exists()) {
@@ -52,12 +48,8 @@ class SyncService {
             }
           }
 
-          // 3. Mark as synced
           await _db.markAsSynced(id);
-          print('Synced report for task $taskId');
-        } catch (e) {
-          print('Failed to sync report $id: $e');
-        }
+        } catch (_) {}
       }
     } finally {
       _isSyncing = false;

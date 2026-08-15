@@ -1,58 +1,26 @@
-import 'dart:convert';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
-
+/// تخزين مؤقت بسيط للتقارير غير المتزامنة (بدون sqflite).
 class DatabaseService {
-  static Database? _database;
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB();
-    return _database!;
-  }
-
-  Future<Database> _initDB() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'inspector_offline.db');
-
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE offline_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            taskId TEXT NOT NULL,
-            generalCondition TEXT,
-            qualityScore INTEGER,
-            hasViolations INTEGER,
-            reportNotes TEXT,
-            photoPaths TEXT,
-            createdAt TEXT,
-            isSynced INTEGER DEFAULT 0
-          )
-        ''');
-      },
-    );
-  }
+  static final List<Map<String, dynamic>> _offlineReports = <Map<String, dynamic>>[];
+  static int _nextId = 1;
 
   Future<int> saveReport(Map<String, dynamic> report) async {
-    final db = await database;
-    return await db.insert('offline_reports', report);
+    final id = _nextId++;
+    _offlineReports.add(<String, dynamic>{
+      ...report,
+      'id': id,
+      'isSynced': report['isSynced'] ?? 0,
+    });
+    return id;
   }
 
   Future<List<Map<String, dynamic>>> getUnsyncedReports() async {
-    final db = await database;
-    return await db.query('offline_reports', where: 'isSynced = 0');
+    return _offlineReports.where((r) => (r['isSynced'] as int?) == 0).toList();
   }
 
   Future<int> markAsSynced(int id) async {
-    final db = await database;
-    return await db.update(
-      'offline_reports',
-      {'isSynced': 1},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final index = _offlineReports.indexWhere((r) => r['id'] == id);
+    if (index < 0) return 0;
+    _offlineReports[index]['isSynced'] = 1;
+    return 1;
   }
 }
