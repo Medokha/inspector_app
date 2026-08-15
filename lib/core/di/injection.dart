@@ -1,3 +1,4 @@
+import 'package:inspector_app/core/field/field_sync_service.dart';
 import 'package:inspector_app/core/network/api_client.dart';
 import 'package:inspector_app/core/network/http_client_factory.dart';
 import 'package:inspector_app/core/notifications/inspector_realtime_service.dart';
@@ -55,7 +56,8 @@ final _authSession = AuthSession();
 final _apiClient = ApiClient(createHttpClient(), _authSession);
 final _authRepository = AuthRepositoryImpl(AuthRemoteDataSource(_apiClient), _authSession);
 final _tasksRepository = TasksRepositoryImpl(_apiClient);
-final _trackingService = InspectorTrackingService(_tasksRepository);
+final _fieldSyncService = FieldSyncService(_tasksRepository);
+final _trackingService = InspectorTrackingService(_tasksRepository, sync: _fieldSyncService);
 final _realtimeService = InspectorRealtimeService(_apiClient, _authSession);
 final _notificationsRepository = NotificationsRepositoryImpl(_apiClient);
 
@@ -71,8 +73,13 @@ Future<void> restoreSession() => _authSession.restore();
 
 Future<void> startInspectorRealtime() => _realtimeService.start();
 
+Future<void> startFieldSync() => _fieldSyncService.start();
+
+FieldSyncService fieldSyncService() => _fieldSyncService;
+
 Future<void> logout() async {
-  _trackingService.stop();
+  await _trackingService.stop();
+  _fieldSyncService.dispose();
   await _realtimeService.stop();
   await LogoutUseCase(_authRepository)();
 }
@@ -108,6 +115,7 @@ ReportController createReportController() {
   return ReportController(
     submitReport: SubmitTaskReportUseCase(_tasksRepository),
     tracking: _trackingService,
+    sync: _fieldSyncService,
   );
 }
 

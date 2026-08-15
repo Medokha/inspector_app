@@ -47,8 +47,14 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>نحتاج موقعك لإثبات الحضور وتتبع مسار التفتيش أثناء تنفيذ المهمة</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج الموقع باستمرار لتسجيل مسار التفتيش حتى والشاشة مغلقة أثناء المهمة الجارية</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>نحتاج الميكروفون لتسجيل تعليقات صوتية قصيرة مع تقرير التفتيش</string>
 	<key>NSCameraUsageDescription</key>
 	<string>نحتاج الكاميرا لالتقاط صور تقرير التفتيش</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>نستخدم Face ID لتسجيل الدخول السريع بعد أول دخول بكلمة المرور</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
@@ -60,6 +66,7 @@
 	<array>
 		<string>remote-notification</string>
 		<string>fetch</string>
+		<string>location</string>
 	</array>
 </dict>
 </plist>

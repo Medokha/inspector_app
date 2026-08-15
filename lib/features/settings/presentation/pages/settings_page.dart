@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/security/biometric_auth_service.dart';
 import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
@@ -21,12 +22,25 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late final SettingsController _controller;
+  bool _biometricEnabled = false;
+  bool _biometricSupported = false;
 
   @override
   void initState() {
     super.initState();
     _controller = createSettingsController();
     _controller.load();
+    _loadBiometric();
+  }
+
+  Future<void> _loadBiometric() async {
+    final supported = await BiometricAuthService.isDeviceSupported;
+    final enabled = await BiometricAuthService.isEnabled;
+    if (!mounted) return;
+    setState(() {
+      _biometricSupported = supported;
+      _biometricEnabled = enabled;
+    });
   }
 
   @override
@@ -133,11 +147,39 @@ class _SettingsPageState extends State<SettingsPage> {
                           onChanged: (value) => _update(settings.copyWith(isDarkMode: value)),
                         ),
                         _SettingsSwitch(
+                          label: 'وضع ليلي ميداني (تباين عالي)',
+                          icon: Icons.wb_sunny_outlined,
+                          value: settings.fieldNightMode,
+                          onChanged: (value) => _update(
+                            settings.copyWith(
+                              fieldNightMode: value,
+                              isDarkMode: value ? true : settings.isDarkMode,
+                            ),
+                          ),
+                        ),
+                        _SettingsSwitch(
                           label: 'تحميل الخرائط دون اتصال',
                           icon: Icons.map_outlined,
                           value: settings.offlineMapsEnabled,
                           onChanged: (value) => _update(settings.copyWith(offlineMapsEnabled: value)),
                         ),
+                        if (_biometricSupported)
+                          _SettingsSwitch(
+                            label: 'فتح التطبيق بالبصمة / الوجه',
+                            icon: Icons.fingerprint,
+                            value: _biometricEnabled,
+                            onChanged: (value) async {
+                              if (value) {
+                                final email = currentAuthSession().email;
+                                if (email == null || email.isEmpty) return;
+                                await BiometricAuthService.enableAfterPasswordLogin(email);
+                              } else {
+                                await BiometricAuthService.disable();
+                              }
+                              if (!mounted) return;
+                              setState(() => _biometricEnabled = value);
+                            },
+                          ),
                         _InfoTile(
                           label: 'حجم ذاكرة التخزين',
                           icon: Icons.storage_outlined,
@@ -147,6 +189,37 @@ class _SettingsPageState extends State<SettingsPage> {
                           label: 'نسخة التطبيق',
                           icon: Icons.info_outline,
                           value: settings.appVersion,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // مزامنة الميدان
+                    _SettingsSection(
+                      title: 'المزامنة الميدانية',
+                      children: [
+                        ValueListenableBuilder<int>(
+                          valueListenable: fieldSyncService().pendingCount,
+                          builder: (context, pending, _) {
+                            return _ActionTile(
+                              label: pending > 0
+                                  ? 'مزامنة الآن ($pending معلّق)'
+                                  : 'مزامنة الآن — لا يوجد معلّق',
+                              icon: Icons.sync_rounded,
+                              onTap: () async {
+                                final n = await fieldSyncService().syncPending();
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      n > 0 ? 'تمت مزامنة $n عنصر' : 'لا توجد عناصر للمزامنة أو الشبكة غير متاحة',
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ],
                     ),

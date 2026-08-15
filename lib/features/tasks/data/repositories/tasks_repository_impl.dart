@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:inspector_app/core/config/api_config.dart';
 import 'package:inspector_app/core/network/api_client.dart';
 import 'package:inspector_app/core/network/api_mappers.dart';
+import 'package:inspector_app/core/security/audit_trail_presenter.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
@@ -75,6 +76,12 @@ class TasksRepositoryImpl implements TasksRepository {
       } catch (_) {}
     }
 
+    var auditTrail = const <AuditTrailEntry>[];
+    try {
+      final historyJson = await _api.get('/api/Tasks/$id/history');
+      auditTrail = AuditTrailPresenter.fromHistoryMaps(JsonMap.mapList(historyJson));
+    } catch (_) {}
+
     return TaskDetailsEntity(
       task: task,
       code: JsonMap.str(json['id']).replaceAll('-', '').toUpperCase().substring(
@@ -86,6 +93,7 @@ class TasksRepositoryImpl implements TasksRepository {
       description: JsonMap.str(json['description']).isEmpty ? null : JsonMap.str(json['description']),
       latitude: lat,
       longitude: lng,
+      auditTrail: auditTrail,
       steps: <TaskStepEntity>[
         TaskStepEntity(
           title: 'بيانات الموقع',

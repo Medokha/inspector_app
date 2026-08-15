@@ -9,12 +9,18 @@ import 'package:inspector_app/features/tasks/domain/entities/task_details_entity
 import 'package:inspector_app/features/tasks/domain/entities/task_step_entity.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/task_details_controller.dart';
 import 'package:inspector_app/features/tasks/presentation/pages/report_page.dart';
+import 'package:inspector_app/features/tasks/domain/quality/previous_visit_photo.dart';
 import 'package:inspector_app/features/tasks/presentation/widgets/task_location_map_preview.dart';
 
 class TaskDetailsPage extends StatefulWidget {
-  const TaskDetailsPage({super.key, required this.taskId});
+  const TaskDetailsPage({
+    super.key,
+    required this.taskId,
+    this.autoStartTracking = false,
+  });
 
   final String taskId;
+  final bool autoStartTracking;
 
   @override
   State<TaskDetailsPage> createState() => _TaskDetailsPageState();
@@ -22,16 +28,31 @@ class TaskDetailsPage extends StatefulWidget {
 
 class _TaskDetailsPageState extends State<TaskDetailsPage> {
   late final TaskDetailsController _controller;
+  bool _autoStartTried = false;
 
   @override
   void initState() {
     super.initState();
     _controller = createTaskDetailsController();
+    _controller.addListener(_maybeAutoStart);
     _controller.load(widget.taskId);
+  }
+
+  void _maybeAutoStart() {
+    if (_autoStartTried || !widget.autoStartTracking) return;
+    final details = _controller.details;
+    if (details == null || _controller.isLoading) return;
+    _autoStartTried = true;
+    if (details.canStart) {
+      _controller.start(widget.taskId);
+    } else if (details.isTracking) {
+      // المهمة جارية بالفعل — التتبع يُستأنف من load
+    }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_maybeAutoStart);
     _controller.dispose();
     super.dispose();
   }
@@ -330,6 +351,48 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                     }).toList(),
                   ),
                 ),
+                if (details.auditTrail.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 16),
+                  _SectionCard(
+                    title: 'سجل التدقيق',
+                    icon: Icons.history_edu_outlined,
+                    child: Column(
+                      children: details.auditTrail.map((e) {
+                        final when = e.at.millisecondsSinceEpoch == 0
+                            ? '—'
+                            : '${e.at.toLocal()}'.split('.').first;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Icon(Icons.circle, size: 8, color: theme.colorScheme.secondary),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      e.summaryAr,
+                                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'بواسطة: ${e.performedBy} · $when',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _SectionCard(
                   title: 'الموقع الجغرافي',
@@ -538,7 +601,23 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                       onPressed: () async {
                         final submitted = await Navigator.of(context).push<bool>(
                           MaterialPageRoute(
-                            builder: (_) => ReportPage(taskId: widget.taskId, taskTitle: details.task.title),
+                            builder: (_) => ReportPage(
+                              taskId: widget.taskId,
+                              taskTitle: details.task.title,
+                              taskDescription: details.description,
+                              previousPhotos: details.report?.photos
+                                      .where((p) => !p.isPdf)
+                                      .map(
+                                        (p) => PreviousVisitPhoto(
+                                          id: p.id,
+                                          url: p.url,
+                                          fileName: p.fileName,
+                                          description: p.description,
+                                        ),
+                                      )
+                                      .toList() ??
+                                  const <PreviousVisitPhoto>[],
+                            ),
                           ),
                         );
                         if (submitted == true) {

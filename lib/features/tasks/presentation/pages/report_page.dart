@@ -1,18 +1,33 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/security/photo_watermark_service.dart';
 import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
+import 'package:inspector_app/features/tasks/domain/quality/before_after_compare.dart';
+import 'package:inspector_app/features/tasks/domain/quality/previous_visit_photo.dart';
+import 'package:inspector_app/features/tasks/domain/quality/report_quality_service.dart';
+import 'package:inspector_app/features/tasks/domain/quality/report_templates.dart';
+import 'package:inspector_app/features/tasks/domain/quality/voice_note_service.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/report_controller.dart';
 
 class ReportPage extends StatefulWidget {
-  const ReportPage({super.key, required this.taskId, this.taskTitle});
+  const ReportPage({
+    super.key,
+    required this.taskId,
+    this.taskTitle,
+    this.taskDescription,
+    this.previousPhotos = const <PreviousVisitPhoto>[],
+  });
 
   final String taskId;
   final String? taskTitle;
+  final String? taskDescription;
+  final List<PreviousVisitPhoto> previousPhotos;
 
   @override
   State<ReportPage> createState() => _ReportPageState();
@@ -22,22 +37,83 @@ class _ReportPageState extends State<ReportPage> {
   late final ReportController _controller;
   final _notesController = TextEditingController();
   final _picker = ImagePicker();
+  final Map<String, TextEditingController> _fieldControllers = {};
+
+  late ReportTemplate _template;
+  late ChecklistState _checklist;
+  WaqfSiteType _siteType = WaqfSiteType.general;
 
   String _selected = 'جيد - العمل يسير حسب الخطة';
   int _qualityScore = 4;
   bool _hasIssues = false;
   final List<_ReportAttachment> _attachments = <_ReportAttachment>[];
+  VoiceNoteMeta? _voiceNote;
+  final Map<String, PhotoAngleTag> _attachmentAngles = <String, PhotoAngleTag>{};
+
+  List<BeforeAfterPair> get _beforeAfterPairs {
+    if (widget.previousPhotos.isEmpty || _attachments.isEmpty) {
+      return const <BeforeAfterPair>[];
+    }
+    final previous = widget.previousPhotos.map((p) => p.toTagged()).toList();
+    final current = <TaggedPhoto>[];
+    for (var i = 0; i < _attachments.length; i++) {
+      final a = _attachments[i];
+      if (a.isPdf) continue;
+      final key = '${a.filename}_$i';
+      current.add(
+        TaggedPhoto(
+          id: key,
+          urlOrPath: a.filename,
+          angle: _attachmentAngles[key] ?? BeforeAfterCompare.guessAngle(a.filename),
+          capturedAt: DateTime.now(),
+        ),
+      );
+    }
+    return ReportQualityService.compareVisits(previous: previous, current: current);
+  }
 
   @override
   void initState() {
     super.initState();
     _controller = createReportController();
+    _template = ReportQualityService.templateForTask(
+      title: widget.taskTitle,
+      description: widget.taskDescription,
+    );
+    _siteType = _template.siteType;
+    _checklist = ReportQualityService.createChecklist(_template);
+    _rebuildFieldControllers();
+  }
+
+  void _rebuildFieldControllers() {
+    for (final c in _fieldControllers.values) {
+      c.dispose();
+    }
+    _fieldControllers
+      ..clear()
+      ..addEntries(
+        _template.fields.map(
+          (f) => MapEntry(f.id, TextEditingController()),
+        ),
+      );
+  }
+
+  void _applySiteType(WaqfSiteType type) {
+    setState(() {
+      _siteType = type;
+      _template = ReportTemplateCatalog.forType(type);
+      _checklist = ReportQualityService.createChecklist(_template);
+      _rebuildFieldControllers();
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _notesController.dispose();
+    for (final c in _fieldControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -46,7 +122,25 @@ class _ReportPageState extends State<ReportPage> {
   Future<void> _pickPhoto({required ImageSource source}) async {
     final file = await _picker.pickImage(source: source, imageQuality: 80);
     if (file == null) return;
-    final bytes = await file.readAsBytes();
+    var bytes = await file.readAsBytes();
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      );
+      bytes = PhotoWatermarkService.apply(
+        bytes: Uint8List.fromList(bytes),
+        capturedAt: DateTime.now(),
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        taskId: widget.taskId,
+      );
+    } catch (_) {
+      bytes = PhotoWatermarkService.apply(
+        bytes: Uint8List.fromList(bytes),
+        capturedAt: DateTime.now(),
+        taskId: widget.taskId,
+      );
+    }
     setState(() {
       _attachments.add(
         _ReportAttachment(
@@ -55,6 +149,8 @@ class _ReportPageState extends State<ReportPage> {
           isPdf: false,
         ),
       );
+      final key = '${file.name.isEmpty ? 'photo.jpg' : file.name}_${_attachments.length - 1}';
+      _attachmentAngles[key] = BeforeAfterCompare.guessAngle(file.name);
     });
   }
 
@@ -86,6 +182,33 @@ class _ReportPageState extends State<ReportPage> {
     }
     if (added.isEmpty) return;
     setState(() => _attachments.addAll(added));
+  }
+
+  Future<void> _pickVoice() async {
+    final files = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const <String>['m4a', 'aac', 'mp3', 'wav', 'ogg'],
+    );
+    if (files.isEmpty) return;
+    final file = files.first;
+    final path = file.path;
+    if (path == null || path.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر قراءة ملف الصوت على هذا الجهاز'), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+    final meta = await VoiceNoteService.validateFile(path);
+    final error = VoiceNoteService.validationError(meta);
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+    setState(() => _voiceNote = meta);
   }
 
   Future<void> _chooseSource() async {
@@ -123,6 +246,15 @@ class _ReportPageState extends State<ReportPage> {
                 _pickFiles();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.mic_none_outlined),
+              title: const Text('تعليق صوتي'),
+              subtitle: const Text('ملف قصير بحد أقصى 90 ثانية'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickVoice();
+              },
+            ),
           ],
         ),
       ),
@@ -130,19 +262,13 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   Future<void> _submit() async {
-    if (_attachments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يجب إرفاق صورة أو ملف PDF واحد على الأقل'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
     final photoFiles = _attachments
         .map((a) => (bytes: a.bytes, filename: a.filename))
         .toList();
+
+    final fieldValues = <String, String>{
+      for (final e in _fieldControllers.entries) e.key: e.value.text.trim(),
+    };
 
     final ok = await _controller.submit(
       taskId: widget.taskId,
@@ -151,12 +277,19 @@ class _ReportPageState extends State<ReportPage> {
       hasViolations: _hasIssues,
       reportNotes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       photoFiles: photoFiles,
+      checklist: _checklist,
+      template: _template,
+      templateFields: fieldValues,
+      voiceNote: _voiceNote,
     );
     if (!mounted) return;
 
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم رفع التقرير بنجاح'), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+          content: Text('تم حفظ/رفع التقرير (يُزامَن تلقائياً عند توفر الشبكة)'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       Navigator.of(context).pop(true);
     } else {
@@ -176,7 +309,7 @@ class _ReportPageState extends State<ReportPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('رفع التقرير'),
+        title: Text(_template.title),
       ),
       body: AnimatedBuilder(
         animation: _controller,
@@ -193,10 +326,48 @@ class _ReportPageState extends State<ReportPage> {
                 Text(widget.taskTitle!, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 16),
               ],
-              Text(
-                'الحالة العامة للموقع',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              Text('نوع الوقف', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: WaqfSiteType.values.map((type) {
+                  return ChoiceChip(
+                    label: Text(type.labelAr),
+                    selected: _siteType == type,
+                    onSelected: (_) => _applySiteType(type),
+                  );
+                }).toList(),
               ),
+              const SizedBox(height: 20),
+              Text('قائمة التحقق (إلزامية)', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ..._checklist.definitions.map((item) {
+                return CheckboxListTile(
+                  value: _checklist.checked[item.id] ?? false,
+                  onChanged: (v) => setState(() => _checklist.setChecked(item.id, v ?? false)),
+                  title: Text(item.label),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                );
+              }),
+              const SizedBox(height: 16),
+              Text('حقول القالب', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ..._template.fields.map((field) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: TextField(
+                    controller: _fieldControllers[field.id],
+                    decoration: InputDecoration(
+                      labelText: field.label + (field.required ? ' *' : ''),
+                      hintText: field.hint,
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 8),
+              Text('الحالة العامة للموقع', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               _ReportOption(
                 value: 'جيد - العمل يسير حسب الخطة',
@@ -223,10 +394,7 @@ class _ReportPageState extends State<ReportPage> {
                 onChanged: (value) => setState(() => _selected = value),
               ),
               const SizedBox(height: 16),
-              Text(
-                'تقييم جودة التنفيذ',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
+              Text('تقييم جودة التنفيذ', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
               Slider(
                 value: _qualityScore.toDouble(),
                 min: 1,
@@ -243,43 +411,115 @@ class _ReportPageState extends State<ReportPage> {
                 title: const Text('مخالفات موجودة؟'),
               ),
               const SizedBox(height: 16),
-              Text(
-                'المرفقات (صورة أو PDF) — إلزامي',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'يمكنك رفع صور وملفات PDF معاً',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
+              Text('المرفقات — إلزامي', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: <Widget>[
-                  ..._attachments.map(
-                    (file) => Chip(
+                  ...List<Widget>.generate(_attachments.length, (index) {
+                    final file = _attachments[index];
+                    final key = '${file.filename}_$index';
+                    return InputChip(
                       avatar: Icon(
                         file.isPdf ? Icons.picture_as_pdf_outlined : Icons.image_outlined,
                         size: 18,
                       ),
-                      label: Text(file.filename, overflow: TextOverflow.ellipsis),
-                      onDeleted: () => setState(() => _attachments.remove(file)),
+                      label: Text(
+                        file.isPdf
+                            ? file.filename
+                            : '${file.filename} (${(_attachmentAngles[key] ?? PhotoAngleTag.other).labelAr})',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onDeleted: () => setState(() {
+                        _attachments.removeAt(index);
+                        _attachmentAngles.remove(key);
+                      }),
+                      onPressed: file.isPdf
+                          ? null
+                          : () async {
+                              final selected = await showModalBottomSheet<PhotoAngleTag>(
+                                context: context,
+                                showDragHandle: true,
+                                builder: (ctx) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: PhotoAngleTag.values
+                                        .map(
+                                          (tag) => ListTile(
+                                            title: Text(tag.labelAr),
+                                            onTap: () => Navigator.pop(ctx, tag),
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                                ),
+                              );
+                              if (selected != null) {
+                                setState(() => _attachmentAngles[key] = selected);
+                              }
+                            },
+                    );
+                  }),
+                  if (_voiceNote != null)
+                    Chip(
+                      avatar: const Icon(Icons.mic, size: 18),
+                      label: Text(_voiceNote!.filename, overflow: TextOverflow.ellipsis),
+                      onDeleted: () => setState(() => _voiceNote = null),
                     ),
-                  ),
                   ActionChip(
                     avatar: Icon(Icons.attach_file, color: theme.colorScheme.primary),
-                    label: const Text('إضافة مرفق'),
+                    label: const Text('إضافة مرفق / صوت'),
                     onPressed: _chooseSource,
                   ),
                 ],
               ),
+              if (widget.previousPhotos.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 20),
+                Text(
+                  'مقارنة قبل / بعد',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'اختر زاوية كل صورة بالضغط عليها لربطها بصور الزيارة السابقة',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  BeforeAfterCompare.summary(_beforeAfterPairs),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                ..._beforeAfterPairs.map((pair) {
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Icon(
+                        pair.isComplete ? Icons.compare_rounded : Icons.compare_arrows_outlined,
+                        color: pair.isComplete ? theme.colorScheme.primary : theme.colorScheme.outline,
+                      ),
+                      title: Text(pair.angle.labelAr),
+                      subtitle: Text(
+                        pair.isComplete
+                            ? 'مكتمل: قبل وبعد لنفس الزاوية'
+                            : pair.before == null
+                                ? 'أضف صورة لهذه الزاوية'
+                                : 'بانتظار صورة حالية',
+                      ),
+                      trailing: pair.isComplete
+                          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+                          : null,
+                    ),
+                  );
+                }),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: _notesController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  hintText: 'اكتب ملاحظات هنا...',
+                  hintText: 'ملاحظات إضافية...',
                 ),
               ),
               const SizedBox(height: 24),

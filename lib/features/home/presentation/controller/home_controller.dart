@@ -7,8 +7,6 @@ import 'package:inspector_app/features/home/domain/usecases/get_home_overview_us
 import 'package:inspector_app/features/tasks/data/services/inspector_tracking_service.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
 
-import 'package:inspector_app/core/notifications/notification_service.dart';
-
 class HomeController extends ChangeNotifier {
   HomeController({
     required GetHomeOverviewUseCase getOverview,
@@ -26,7 +24,7 @@ class HomeController extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   Timer? _timer;
-  StreamSubscription? _notificationSubscription;
+  StreamSubscription<InspectorIncomingNotification>? _notificationSubscription;
 
   HomeOverview? get overview => _overview;
   bool get isLoading => _isLoading;
@@ -54,7 +52,13 @@ class HomeController extends ChangeNotifier {
         .where((task) => task.status == TaskStatus.inProgress)
         .toList();
     if (inProgress == null || inProgress.isEmpty) return;
-    await _tracking.start(inProgress.first.id);
+    final task = inProgress.first;
+    await _tracking.start(
+      task.id,
+      taskTitle: task.title,
+      siteLat: task.latitude,
+      siteLng: task.longitude,
+    );
   }
 
   void startPolling() {
@@ -64,8 +68,8 @@ class HomeController extends ChangeNotifier {
 
   void startListeningToNotifications() {
     _notificationSubscription?.cancel();
-    _notificationSubscription = NotificationService().onNotificationReceived.listen((_) {
-      load(); // Refresh home overview when a new notification arrives
+    _notificationSubscription = _realtime.incoming.listen((_) {
+      load();
     });
   }
 

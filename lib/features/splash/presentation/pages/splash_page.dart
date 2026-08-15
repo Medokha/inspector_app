@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/security/biometric_auth_service.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
 import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
+import 'package:inspector_app/features/onboarding/presentation/pages/onboarding_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -44,9 +46,29 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     Timer(const Duration(milliseconds: 2400), () async {
       if (!mounted) return;
-      final authenticated = currentAuthSession().isAuthenticated;
+      final onboarded = await OnboardingPage.isDone();
+      if (!mounted) return;
+      if (!onboarded) {
+        Navigator.of(context).pushReplacement(FadePageRoute(child: const OnboardingPage()));
+        return;
+      }
+
+      var authenticated = currentAuthSession().isAuthenticated;
+      if (authenticated && await BiometricAuthService.isEnabled) {
+        final email = await BiometricAuthService.authenticate(
+          reason: 'افتح التطبيق بالبصمة أو الوجه',
+        );
+        if (!mounted) return;
+        if (email == null) {
+          Navigator.of(context).pushReplacement(FadePageRoute(child: const LoginPage()));
+          return;
+        }
+      }
+
+      authenticated = currentAuthSession().isAuthenticated;
       if (authenticated) {
         unawaited(startInspectorRealtime());
+        unawaited(startFieldSync());
       }
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

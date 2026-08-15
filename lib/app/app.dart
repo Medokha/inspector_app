@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
+import 'package:inspector_app/core/navigation/notification_navigation.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 import 'package:inspector_app/features/settings/presentation/controller/settings_controller.dart';
@@ -21,6 +22,7 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final SettingsController _settingsController;
+  final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
 
   static const Locale _arabic = Locale('ar');
 
@@ -29,6 +31,7 @@ class _AppState extends State<App> {
     super.initState();
     _settingsController = createSettingsController();
     _settingsController.load();
+    NotificationNavigation.bind(_navKey);
   }
 
   @override
@@ -42,12 +45,14 @@ class _AppState extends State<App> {
     return AnimatedBuilder(
       animation: _settingsController,
       builder: (context, child) {
-        final isDarkMode = _settingsController.settings?.isDarkMode ?? false;
+        final settings = _settingsController.settings;
+        final isDarkMode = settings?.isDarkMode ?? false;
+        final fieldNight = settings?.fieldNightMode ?? false;
         final home = widget.homeOverride ?? (widget.showSplash ? const SplashPage() : const LoginPage());
 
         return MaterialApp(
+          navigatorKey: _navKey,
           debugShowCheckedModeBanner: false,
-          // فرض العربية على كل التطبيق (واجهة النظام + النصوص)
           locale: _arabic,
           supportedLocales: AppLocalizations.supportedLocales,
           localeResolutionCallback: (deviceLocale, supported) => _arabic,
@@ -59,13 +64,12 @@ class _AppState extends State<App> {
             GlobalCupertinoLocalizations.delegate,
           ],
           theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          darkTheme: fieldNight ? AppTheme.fieldNight : AppTheme.dark,
+          themeMode: (isDarkMode || fieldNight) ? ThemeMode.dark : ThemeMode.light,
           builder: (context, child) {
             final theme = Theme.of(context);
             final navColor = theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
             final media = MediaQuery.of(context);
-            // يمنع تضخم الخط على الهواتف الصغيرة ويحافظ على قابلية القراءة.
             final clampedScaler = media.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.25);
             return MediaQuery(
               data: media.copyWith(textScaler: clampedScaler),

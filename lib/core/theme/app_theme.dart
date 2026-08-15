@@ -28,13 +28,19 @@ class AppTheme {
     return _buildTheme(base, isDark: true);
   }
 
-  static ThemeData _buildTheme(ThemeData base, {required bool isDark}) {
+  /// وضع ليلي ميداني: تباين أعلى ونص أوضح تحت الشمس/ليل.
+  static ThemeData get fieldNight {
+    final base = ThemeData.dark(useMaterial3: true);
+    return _buildTheme(base, isDark: true, fieldNight: true);
+  }
+
+  static ThemeData _buildTheme(ThemeData base, {required bool isDark, bool fieldNight = false}) {
     // في الوضع الليلي نستخدم أزرق أفتح كـ primary حتى لا ينهار ColorScheme
     // ولا تختفي الأزرار/المفاتيح على خلفية داكنة.
-    final primary = isDark ? navyLight : primaryNavy;
-    final onSurface = isDark ? textLight : textDark;
-    final surface = isDark ? surfaceDark : surfaceWhite;
-    final background = isDark ? backgroundDark : backgroundLight;
+    final primary = isDark ? (fieldNight ? accentGoldLight : navyLight) : primaryNavy;
+    final onSurface = isDark ? (fieldNight ? const Color(0xFFFFF8E7) : textLight) : textDark;
+    final surface = isDark ? (fieldNight ? const Color(0xFF0E1218) : surfaceDark) : surfaceWhite;
+    final background = isDark ? (fieldNight ? const Color(0xFF05070A) : backgroundDark) : backgroundLight;
 
     final colorScheme = ColorScheme(
       brightness: isDark ? Brightness.dark : Brightness.light,

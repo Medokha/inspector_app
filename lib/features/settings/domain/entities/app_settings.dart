@@ -5,6 +5,7 @@ class AppSettings {
     required this.deadlineReminders,
     required this.offlineMapsEnabled,
     required this.isDarkMode,
+    required this.fieldNightMode,
     required this.storageUsedLabel,
     required this.appVersion,
   });
@@ -14,6 +15,8 @@ class AppSettings {
   final bool deadlineReminders;
   final bool offlineMapsEnabled;
   final bool isDarkMode;
+  /// وضع ليلي ميداني عالي التباين للشاشات تحت الشمس/ليل.
+  final bool fieldNightMode;
   final String storageUsedLabel;
   final String appVersion;
 
@@ -23,6 +26,7 @@ class AppSettings {
     bool? deadlineReminders,
     bool? offlineMapsEnabled,
     bool? isDarkMode,
+    bool? fieldNightMode,
   }) {
     return AppSettings(
       newTasks: newTasks ?? this.newTasks,
@@ -30,6 +34,7 @@ class AppSettings {
       deadlineReminders: deadlineReminders ?? this.deadlineReminders,
       offlineMapsEnabled: offlineMapsEnabled ?? this.offlineMapsEnabled,
       isDarkMode: isDarkMode ?? this.isDarkMode,
+      fieldNightMode: fieldNightMode ?? this.fieldNightMode,
       storageUsedLabel: storageUsedLabel,
       appVersion: appVersion,
     );
@@ -41,6 +46,7 @@ class AppSettings {
         'deadlineReminders': deadlineReminders,
         'offlineMapsEnabled': offlineMapsEnabled,
         'isDarkMode': isDarkMode,
+        'fieldNightMode': fieldNightMode,
         'storageUsedLabel': storageUsedLabel,
         'appVersion': appVersion,
       };
@@ -51,6 +57,7 @@ class AppSettings {
         deadlineReminders: json['deadlineReminders'] as bool? ?? false,
         offlineMapsEnabled: json['offlineMapsEnabled'] as bool? ?? true,
         isDarkMode: json['isDarkMode'] as bool? ?? false,
+        fieldNightMode: json['fieldNightMode'] as bool? ?? false,
         storageUsedLabel: json['storageUsedLabel'] as String? ?? '',
         appVersion: json['appVersion'] as String? ?? '',
       );

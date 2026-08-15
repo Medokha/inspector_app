@@ -48,6 +48,20 @@ class _TasksPageState extends State<TasksPage> {
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   children: [
+                    if (_controller.fromOfflineCache)
+                      Container(
+                        width: double.infinity,
+                        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.55),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        child: Row(
+                          children: <Widget>[
+                            const Icon(Icons.cloud_off_outlined, size: 18),
+                            const SizedBox(width: 8),
+                            const Expanded(child: Text('عرض من التخزين المحلي — لا يوجد اتصال')),
+                            TextButton(onPressed: _controller.load, child: const Text('تحديث')),
+                          ],
+                        ),
+                      ),
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                       child: SingleChildScrollView(

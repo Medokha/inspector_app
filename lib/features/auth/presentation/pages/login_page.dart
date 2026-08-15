@@ -7,6 +7,7 @@ import 'package:inspector_app/core/config/api_config.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/security/biometric_auth_service.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
 import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/features/auth/presentation/controller/login_controller.dart';
@@ -40,6 +41,27 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+    unawaited(_tryBiometric());
+  }
+
+  Future<void> _tryBiometric() async {
+    final email = await BiometricAuthService.authenticate(reason: 'سجّل الدخول بالبصمة أو الوجه');
+    if (email == null || !mounted) return;
+    _emailController.text = email;
+    // البصمة تؤكد الجهاز؛ نطلب كلمة المرور مرة واحدةً أو نكمل إن كانت الجلسة محفوظة
+    if (currentAuthSession().isAuthenticated) {
+      Navigator.of(context).pushReplacement(FadePageRoute(child: const MainShellPage()));
+      unawaited(startInspectorRealtime());
+      unawaited(startFieldSync());
+      return;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم التعرف عليك — أدخل كلمة المرور للمتابعة'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -70,9 +92,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     if (!mounted) return;
 
     if (result.isSuccess) {
+      await BiometricAuthService.enableAfterPasswordLogin(email);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(FadePageRoute(child: const MainShellPage()));
       unawaited(startInspectorRealtime());
+      unawaited(startFieldSync());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -251,6 +275,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                                 ),
                                               )
                                             : Text(strings.loginButton),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _controller.isLoading ? null : _tryBiometric,
+                                        icon: const Icon(Icons.fingerprint),
+                                        label: const Text('دخول بالبصمة / الوجه'),
                                       ),
                                     ),
                                   ],
