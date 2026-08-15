@@ -69,7 +69,7 @@ class ApiClient {
         }
         final map = _asMap(decoded);
         throw ApiException(
-          (map['message'] ?? map['error'] ?? 'Request failed').toString(),
+          (map['message'] ?? map['error'] ?? 'فشل الطلب').toString(),
           statusCode: response.statusCode,
         );
       } on ApiException catch (error) {
@@ -155,7 +155,7 @@ class ApiClient {
     }
 
     final map = _asMap(decoded);
-    final message = (map['message'] ?? map['error'] ?? 'Request failed').toString();
+    final message = (map['message'] ?? map['error'] ?? 'فشل الطلب').toString();
     throw ApiException(message, statusCode: response.statusCode);
   }
 

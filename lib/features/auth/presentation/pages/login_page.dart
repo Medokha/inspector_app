@@ -8,6 +8,7 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/features/auth/presentation/controller/login_controller.dart';
 import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
 
@@ -110,7 +111,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: Responsive.pagePadding(context) + 8),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: FadeTransition(
@@ -118,6 +119,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     child: AnimatedBuilder(
                       animation: _controller,
                       builder: (context, child) {
+                        final logoSize = Responsive.logoSize(context, max: 180, min: 120);
                         return Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -128,8 +130,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                 color: Colors.transparent,
                                 child: Center(
                                   child: Container(
-                                    width: 180,
-                                    padding: const EdgeInsets.all(14),
+                                    width: logoSize,
+                                    padding: EdgeInsets.all(logoSize * 0.08),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(24),
@@ -150,7 +152,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       errorBuilder: (context, error, stackTrace) {
                                         return Icon(
                                           Icons.verified,
-                                          size: 72,
+                                          size: logoSize * 0.4,
                                           color: theme.colorScheme.primary,
                                         );
                                       },
@@ -210,7 +212,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       decoration: InputDecoration(
                                         labelText: strings.email,
                                         prefixIcon: const Icon(Icons.person_outline),
-                                        hintText: 'user@example.com',
+                                        hintText: 'inspector@waqf.iq',
                                       ),
                                     ),
                                     const SizedBox(height: 16),

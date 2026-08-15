@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/features/home/presentation/pages/home_page.dart';
 import 'package:inspector_app/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:inspector_app/features/profile/presentation/pages/profile_page.dart';
@@ -47,6 +48,7 @@ class _MainShellPageState extends State<MainShellPage> {
     ];
 
     final navBg = theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
+    final useRail = Responsive.isTablet(context) && MediaQuery.sizeOf(context).width >= Responsive.expandedWidth;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -58,48 +60,95 @@ class _MainShellPageState extends State<MainShellPage> {
         systemNavigationBarDividerColor: Colors.transparent,
       ),
       child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: pages,
-        ),
-        bottomNavigationBar: Material(
-          color: navBg,
-          elevation: 8,
-          shadowColor: Colors.black.withValues(alpha: 0.12),
-          child: SafeArea(
-            top: false,
-            minimum: const EdgeInsets.only(bottom: 4),
-            child: NavigationBar(
-              selectedIndex: _currentIndex,
-              onDestinationSelected: _setIndex,
-              backgroundColor: navBg,
-              indicatorColor: theme.colorScheme.secondary.withValues(alpha: 0.18),
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              destinations: <NavigationDestination>[
-                NavigationDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home, color: theme.colorScheme.primary),
-                  label: 'الرئيسية',
+        body: useRail
+            ? Row(
+                children: <Widget>[
+                  NavigationRail(
+                    selectedIndex: _currentIndex,
+                    onDestinationSelected: _setIndex,
+                    labelType: NavigationRailLabelType.all,
+                    backgroundColor: navBg,
+                    indicatorColor: theme.colorScheme.secondary.withValues(alpha: 0.18),
+                    destinations: <NavigationRailDestination>[
+                      NavigationRailDestination(
+                        icon: const Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home, color: theme.colorScheme.primary),
+                        label: const Text('الرئيسية'),
+                      ),
+                      NavigationRailDestination(
+                        icon: const Icon(Icons.assignment_outlined),
+                        selectedIcon: Icon(Icons.assignment, color: theme.colorScheme.primary),
+                        label: const Text('كل المهام'),
+                      ),
+                      NavigationRailDestination(
+                        icon: const Icon(Icons.map_outlined),
+                        selectedIcon: Icon(Icons.map, color: theme.colorScheme.primary),
+                        label: const Text('خريطة المسار'),
+                      ),
+                      NavigationRailDestination(
+                        icon: const Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person, color: theme.colorScheme.primary),
+                        label: const Text('الملف الشخصي'),
+                      ),
+                    ],
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(
+                    child: Responsive.constrainWidth(
+                      child: IndexedStack(
+                        index: _currentIndex,
+                        children: pages,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Responsive.constrainWidth(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: pages,
                 ),
-                NavigationDestination(
-                  icon: const Icon(Icons.assignment_outlined),
-                  selectedIcon: Icon(Icons.assignment, color: theme.colorScheme.primary),
-                  label: 'كل المهام',
+              ),
+        bottomNavigationBar: useRail
+            ? null
+            : Material(
+                color: navBg,
+                elevation: 8,
+                shadowColor: Colors.black.withValues(alpha: 0.12),
+                child: SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.only(bottom: 4),
+                  child: NavigationBar(
+                    selectedIndex: _currentIndex,
+                    onDestinationSelected: _setIndex,
+                    backgroundColor: navBg,
+                    indicatorColor: theme.colorScheme.secondary.withValues(alpha: 0.18),
+                    labelBehavior: Responsive.navLabelBehavior(context),
+                    destinations: <NavigationDestination>[
+                      NavigationDestination(
+                        icon: const Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home, color: theme.colorScheme.primary),
+                        label: Responsive.isNarrow(context) ? 'رئيسية' : 'الرئيسية',
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.assignment_outlined),
+                        selectedIcon: Icon(Icons.assignment, color: theme.colorScheme.primary),
+                        label: Responsive.isNarrow(context) ? 'مهام' : 'كل المهام',
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.map_outlined),
+                        selectedIcon: Icon(Icons.map, color: theme.colorScheme.primary),
+                        label: Responsive.isNarrow(context) ? 'مسار' : 'خريطة المسار',
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person, color: theme.colorScheme.primary),
+                        label: Responsive.isNarrow(context) ? 'ملفي' : 'الملف الشخصي',
+                      ),
+                    ],
+                  ),
                 ),
-                NavigationDestination(
-                  icon: const Icon(Icons.map_outlined),
-                  selectedIcon: Icon(Icons.map, color: theme.colorScheme.primary),
-                  label: 'خريطة المسار',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.person_outline),
-                  selectedIcon: Icon(Icons.person, color: theme.colorScheme.primary),
-                  label: 'الملف الشخصي',
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }

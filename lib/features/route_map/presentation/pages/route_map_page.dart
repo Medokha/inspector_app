@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/route_map/domain/entities/route_stop_entity.dart';
 import 'package:inspector_app/features/route_map/presentation/controller/route_controller.dart';
@@ -65,7 +66,7 @@ class _RouteMapPageState extends State<RouteMapPage> {
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('تعذر فتح خرائط Google'),
+          content: Text('تعذر فتح خرائط جوجل'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -102,7 +103,13 @@ class _RouteMapPageState extends State<RouteMapPage> {
               : RefreshIndicator(
                   onRefresh: _controller.load,
                   child: ListView(
-                    padding: ScreenInsets.list(context, horizontal: 20, top: 16, extraBottom: 32),
+                    padding: ScreenInsets.list(
+                      context,
+                      horizontal: Responsive.pagePadding(context),
+                      top: 16,
+                      extraBottom: 32,
+                      insideShell: true,
+                    ),
                     children: <Widget>[
                       Container(
                         padding: const EdgeInsets.all(14),
@@ -133,16 +140,18 @@ class _RouteMapPageState extends State<RouteMapPage> {
                         onTap: hasMap ? _openFullscreenMap : null,
                         child: RouteStopsMap(
                           stops: stops,
+                          height: Responsive.mapEmbedHeight(context),
                           onStopTap: _openStop,
                           onOpenFullscreen: hasMap ? _openFullscreenMap : null,
                         ),
                       ),
                       if (hasMap) ...[
                         const SizedBox(height: 12),
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: FilledButton.icon(
+                        if (Responsive.isNarrow(context) || Responsive.widthOf(context) < 400)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              FilledButton.icon(
                                 onPressed: _openFullscreenMap,
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppTheme.primaryNavy,
@@ -152,29 +161,56 @@ class _RouteMapPageState extends State<RouteMapPage> {
                                 icon: const Icon(Icons.fullscreen_rounded),
                                 label: const Text('فتح خريطة المسار'),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: OutlinedButton.icon(
+                              const SizedBox(height: 10),
+                              OutlinedButton.icon(
                                 onPressed: _openGoogleDirections,
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(48),
                                 ),
                                 icon: const Icon(Icons.directions_rounded),
-                                label: const Text('Google Maps'),
+                                label: const Text('خرائط جوجل'),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: _openFullscreenMap,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryNavy,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                  icon: const Icon(Icons.fullscreen_rounded),
+                                  label: const Text('فتح خريطة المسار'),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _openGoogleDirections,
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                  icon: const Icon(Icons.directions_rounded),
+                                  label: const Text('خرائط جوجل'),
+                                ),
+                              ),
+                            ],
+                          ),
                       ],
                       const SizedBox(height: 28),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Text(
-                            'ترتيب الزيارات',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
+                          Flexible(
+                            child: Text(
+                              'ترتيب الزيارات',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                           Container(
@@ -187,7 +223,7 @@ class _RouteMapPageState extends State<RouteMapPage> {
                               '${stops.length}',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ),
@@ -292,10 +328,14 @@ class _RouteStopCard extends StatelessWidget {
                       children: [
                         Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                         const SizedBox(width: 4),
-                        Text(
-                          stop.timeLabel.isEmpty ? '—' : stop.timeLabel,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        Flexible(
+                          child: Text(
+                            stop.timeLabel.isEmpty ? '—' : stop.timeLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
                           ),
                         ),
                         if (stop.distanceLabel.isNotEmpty) ...[

@@ -28,7 +28,7 @@ class RouteMapFullscreenPage extends StatelessWidget {
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('تعذر فتح خرائط Google'),
+          content: Text('تعذر فتح خرائط جوجل'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -46,7 +46,7 @@ class RouteMapFullscreenPage extends StatelessWidget {
         actions: <Widget>[
           if (locatedCount > 0)
             IconButton(
-              tooltip: 'فتح في Google Maps',
+              tooltip: 'فتح في خرائط جوجل',
               onPressed: () => _openGoogleDirections(context),
               icon: const Icon(Icons.open_in_new_rounded),
             ),
@@ -94,7 +94,7 @@ class RouteMapFullscreenPage extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: locatedCount == 0 ? null : () => _openGoogleDirections(context),
                       icon: const Icon(Icons.directions_rounded),
-                      label: const Text('اتجاهات Google'),
+                      label: const Text('اتجاهات جوجل'),
                     ),
                   ),
                   const SizedBox(width: 10),

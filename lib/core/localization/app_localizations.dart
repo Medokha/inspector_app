@@ -6,8 +6,8 @@ class AppLocalizations {
 
   final Locale locale;
 
+  /// التطبيق عربي فقط.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
     Locale('ar'),
   ];
 
@@ -20,64 +20,33 @@ class AppLocalizations {
     return result!;
   }
 
-  static const Map<String, Map<String, String>> _values = <String, Map<String, String>>{
-    'en': <String, String>{
-      'appTitle': 'Al-Mufattish',
-      'counterTitle': 'Counter',
-      'counterHint': 'You have pushed the button this many times:',
-      'increment': 'Increment',
-      'splashLoading': 'Loading…',
-      'loginTitle': 'Login',
-      'loginSubtitle': 'Sign in to continue',
-      'email': 'Email',
-      'password': 'Password',
-      'loginButton': 'Login',
-      'loginFailed': 'Login failed',
-      'loginFillAllFields': 'Please fill all fields',
-      'resetPasswordTitle': 'Reset password',
-      'resetPasswordHint': 'Enter your current password, then choose a new one.',
-      'currentPassword': 'Current password',
-      'newPassword': 'New password',
-      'confirmPassword': 'Confirm new password',
-      'resetPasswordButton': 'Reset password',
-      'resetPasswordSuccess': 'Password updated successfully',
-      'resetPasswordFailed': 'Could not reset password',
-      'resetPasswordMismatch': 'New passwords do not match',
-      'resetPasswordSameAsCurrent': 'New password must be different from the current password',
-      'resetPasswordTooShort': 'Password must be at least 6 characters',
-    },
-    'ar': <String, String>{
-      'appTitle': 'المفتش',
-      'counterTitle': 'العداد',
-      'counterHint': 'لقد ضغطت على الزر هذا العدد من المرات:',
-      'increment': 'زيادة',
-      'splashLoading': 'جارٍ التحميل…',
-      'loginTitle': 'تسجيل الدخول',
-      'loginSubtitle': 'سجّل الدخول للمتابعة',
-      'email': 'البريد الإلكتروني',
-      'password': 'كلمة المرور',
-      'loginButton': 'دخول',
-      'loginFailed': 'فشل تسجيل الدخول',
-      'loginFillAllFields': 'من فضلك أدخل جميع البيانات',
-      'resetPasswordTitle': 'إعادة تعيين كلمة المرور',
-      'resetPasswordHint': 'أدخل كلمة المرور الحالية ثم اختر كلمة مرور جديدة.',
-      'currentPassword': 'كلمة المرور الحالية',
-      'newPassword': 'كلمة المرور الجديدة',
-      'confirmPassword': 'تأكيد كلمة المرور الجديدة',
-      'resetPasswordButton': 'إعادة التعيين',
-      'resetPasswordSuccess': 'تم تحديث كلمة المرور بنجاح',
-      'resetPasswordFailed': 'تعذر إعادة تعيين كلمة المرور',
-      'resetPasswordMismatch': 'كلمتا المرور الجديدتان غير متطابقتين',
-      'resetPasswordSameAsCurrent': 'يجب أن تختلف كلمة المرور الجديدة عن الحالية',
-      'resetPasswordTooShort': 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
-    },
+  static const Map<String, String> _ar = <String, String>{
+    'appTitle': 'المفتش',
+    'counterTitle': 'العداد',
+    'counterHint': 'لقد ضغطت على الزر هذا العدد من المرات:',
+    'increment': 'زيادة',
+    'splashLoading': 'جارٍ التحميل…',
+    'loginTitle': 'تسجيل الدخول',
+    'loginSubtitle': 'سجّل الدخول للمتابعة',
+    'email': 'البريد الإلكتروني',
+    'password': 'كلمة المرور',
+    'loginButton': 'دخول',
+    'loginFailed': 'فشل تسجيل الدخول',
+    'loginFillAllFields': 'من فضلك أدخل جميع البيانات',
+    'resetPasswordTitle': 'إعادة تعيين كلمة المرور',
+    'resetPasswordHint': 'أدخل كلمة المرور الحالية ثم اختر كلمة مرور جديدة.',
+    'currentPassword': 'كلمة المرور الحالية',
+    'newPassword': 'كلمة المرور الجديدة',
+    'confirmPassword': 'تأكيد كلمة المرور الجديدة',
+    'resetPasswordButton': 'إعادة التعيين',
+    'resetPasswordSuccess': 'تم تحديث كلمة المرور بنجاح',
+    'resetPasswordFailed': 'تعذر إعادة تعيين كلمة المرور',
+    'resetPasswordMismatch': 'كلمتا المرور الجديدتان غير متطابقتين',
+    'resetPasswordSameAsCurrent': 'يجب أن تختلف كلمة المرور الجديدة عن الحالية',
+    'resetPasswordTooShort': 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل',
   };
 
-  String _t(String key) {
-    final lang = _values[locale.languageCode];
-    if (lang == null) return _values['en']![key] ?? key;
-    return lang[key] ?? _values['en']![key] ?? key;
-  }
+  String _t(String key) => _ar[key] ?? key;
 
   String get appTitle => _t('appTitle');
   String get counterTitle => _t('counterTitle');
@@ -109,12 +78,11 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   const _AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) =>
-      AppLocalizations.supportedLocales.any((l) => l.languageCode == locale.languageCode);
+  bool isSupported(Locale locale) => true;
 
   @override
   Future<AppLocalizations> load(Locale locale) {
-    return SynchronousFuture<AppLocalizations>(AppLocalizations(locale));
+    return SynchronousFuture<AppLocalizations>(AppLocalizations(const Locale('ar')));
   }
 
   @override

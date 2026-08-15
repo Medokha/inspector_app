@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/report_controller.dart';
 
@@ -181,7 +182,12 @@ class _ReportPageState extends State<ReportPage> {
         animation: _controller,
         builder: (context, child) {
           return ListView(
-            padding: ScreenInsets.list(context, horizontal: 16, top: 16, extraBottom: 32),
+            padding: ScreenInsets.list(
+              context,
+              horizontal: Responsive.pagePadding(context),
+              top: 16,
+              extraBottom: 32,
+            ),
             children: <Widget>[
               if (widget.taskTitle != null) ...<Widget>[
                 Text(widget.taskTitle!, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),

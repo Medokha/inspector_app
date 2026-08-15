@@ -24,7 +24,7 @@ class LoginController extends ChangeNotifier {
     final result = await _loginUseCase(email: email, password: password);
 
     _isLoading = false;
-    _error = result.isSuccess ? null : (result.message ?? 'Login failed');
+    _error = result.isSuccess ? null : (result.message ?? 'فشل تسجيل الدخول');
     notifyListeners();
 
     return result;

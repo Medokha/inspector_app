@@ -101,7 +101,7 @@ class NotificationService {
         NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
-            'High Importance Notifications',
+            'تنبيهات مهمة',
             importance: Importance.max,
             priority: Priority.high,
             icon: android?.smallIcon,

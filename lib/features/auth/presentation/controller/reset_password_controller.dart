@@ -29,7 +29,7 @@ class ResetPasswordController extends ChangeNotifier {
     );
 
     _isLoading = false;
-    _error = result.isSuccess ? null : (result.message ?? 'Reset password failed');
+    _error = result.isSuccess ? null : (result.message ?? 'تعذر إعادة تعيين كلمة المرور');
     notifyListeners();
 
     return result;

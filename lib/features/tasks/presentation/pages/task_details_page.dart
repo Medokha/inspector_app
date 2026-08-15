@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_step_entity.dart';
@@ -226,7 +227,12 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         children: <Widget>[
           // Premium Task Header
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+            padding: EdgeInsets.fromLTRB(
+              Responsive.pagePadding(context),
+              24,
+              Responsive.pagePadding(context),
+              32,
+            ),
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withOpacity(0.05),
               borderRadius: const BorderRadius.only(
@@ -238,10 +244,15 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _InfoChip(label: details.code),
-                    _StatusBadge(label: details.stageLabel, color: theme.colorScheme.primary),
+                    Flexible(child: _InfoChip(label: details.code)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: _StatusBadge(label: details.stageLabel, color: theme.colorScheme.primary),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -257,11 +268,15 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   children: [
                     Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.primary.withOpacity(0.6)),
                     const SizedBox(width: 4),
-                    Text(
-                      details.task.location,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: Text(
+                        details.task.location,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -675,11 +690,17 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w900,
-            color: valueColor,
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: valueColor,
+            ),
           ),
         ),
       ],
@@ -703,6 +724,8 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
           fontSize: 12,
@@ -736,6 +759,8 @@ class _InfoChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 12,

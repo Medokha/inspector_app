@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
@@ -88,7 +89,12 @@ class _TasksPageState extends State<TasksPage> {
                     ),
                     Expanded(
                       child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, ScreenInsets.bottom(context, extra: 24)),
+                        padding: EdgeInsets.fromLTRB(
+                          Responsive.pagePadding(context),
+                          0,
+                          Responsive.pagePadding(context),
+                          ScreenInsets.bottom(context, extra: 24, insideShell: true),
+                        ),
                         itemCount: tasks.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
@@ -193,11 +199,15 @@ class _TaskTile extends StatelessWidget {
                       children: [
                         Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.primary),
                         const SizedBox(width: 4),
-                        Text(
-                          task.location,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                            fontWeight: FontWeight.w500,
+                        Expanded(
+                          child: Text(
+                            task.location,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -207,10 +217,14 @@ class _TaskTile extends StatelessWidget {
                       children: [
                         Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
                         const SizedBox(width: 4),
-                        Text(
-                          task.timeLabel,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                        Expanded(
+                          child: Text(
+                            task.timeLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.4),
+                            ),
                           ),
                         ),
                       ],

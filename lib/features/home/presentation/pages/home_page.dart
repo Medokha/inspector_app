@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/home/presentation/controller/home_controller.dart';
 import 'package:inspector_app/features/notifications/presentation/pages/notifications_page.dart';
@@ -56,13 +57,18 @@ class _HomePageState extends State<HomePage> {
         }
 
         return SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: ScreenInsets.bottom(context, extra: 12)),
+          padding: EdgeInsets.only(bottom: ScreenInsets.bottom(context, extra: 12, insideShell: true)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               // Header Section - Re-imagined for an eye-catching airy look
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
+                padding: EdgeInsets.fromLTRB(
+                  Responsive.pagePadding(context),
+                  24,
+                  Responsive.pagePadding(context),
+                  48,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topRight,
@@ -127,23 +133,28 @@ class _HomePageState extends State<HomePage> {
               ),
               
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: EdgeInsets.symmetric(
+                  horizontal: Responsive.pagePadding(context) + 4,
+                  vertical: 32,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'المهام الجارية',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 20,
+                        Expanded(
+                          child: Text(
+                            'المهام الجارية',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                            ),
                           ),
                         ),
                         TextButton(
                           onPressed: () => widget.onNavigateToTab(1),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text('الكل', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900)),
                               const SizedBox(width: 4),

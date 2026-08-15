@@ -22,6 +22,8 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   late final SettingsController _settingsController;
 
+  static const Locale _arabic = Locale('ar');
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +47,10 @@ class _AppState extends State<App> {
 
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          // فرض العربية على كل التطبيق (واجهة النظام + النصوص)
+          locale: _arabic,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localeResolutionCallback: (deviceLocale, supported) => _arabic,
           onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
           localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
             AppLocalizations.delegate,
@@ -52,26 +58,34 @@ class _AppState extends State<App> {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
           builder: (context, child) {
             final theme = Theme.of(context);
             final navColor = theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
-            return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness:
-                    theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
-                statusBarBrightness:
-                    theme.brightness == Brightness.dark ? Brightness.dark : Brightness.light,
-                systemNavigationBarColor: navColor,
-                systemNavigationBarIconBrightness:
-                    theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
-                systemNavigationBarContrastEnforced: true,
+            final media = MediaQuery.of(context);
+            // يمنع تضخم الخط على الهواتف الصغيرة ويحافظ على قابلية القراءة.
+            final clampedScaler = media.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.25);
+            return MediaQuery(
+              data: media.copyWith(textScaler: clampedScaler),
+              child: AnnotatedRegion<SystemUiOverlayStyle>(
+                value: SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness:
+                      theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+                  statusBarBrightness:
+                      theme.brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+                  systemNavigationBarColor: navColor,
+                  systemNavigationBarIconBrightness:
+                      theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+                  systemNavigationBarContrastEnforced: true,
+                ),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
-              child: child ?? const SizedBox.shrink(),
             );
           },
           home: home,

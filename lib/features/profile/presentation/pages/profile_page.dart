@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:inspector_app/core/di/injection.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
+import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/profile/domain/entities/profile_overview.dart';
 import 'package:inspector_app/features/profile/domain/entities/report_item.dart';
 import 'package:inspector_app/features/profile/presentation/controller/profile_controller.dart';
@@ -133,19 +135,27 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: Colors.white.withOpacity(0.7)),
-                      const SizedBox(width: 4),
-                      Text(
-                        overview.profile.region,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                          fontWeight: FontWeight.w500,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 16, color: Colors.white.withOpacity(0.7)),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            overview.profile.region,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Wrap(
@@ -162,7 +172,12 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 32, 20, 32),
+            padding: EdgeInsets.fromLTRB(
+              Responsive.pagePadding(context),
+              32,
+              Responsive.pagePadding(context),
+              ScreenInsets.bottom(context, extra: 32, insideShell: true),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -171,15 +186,26 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Expanded(child: _StatMiniCard(label: 'مكتملة', value: overview.stats.completed.toString(), color: const Color(0xFF2E7D32))),
-                    const SizedBox(width: 12),
-                    Expanded(child: _StatMiniCard(label: 'معلقة', value: overview.stats.pending.toString(), color: const Color(0xFFF57C00))),
-                    const SizedBox(width: 12),
-                    Expanded(child: _StatMiniCard(label: 'مرفوضة', value: overview.stats.rejected.toString(), color: theme.colorScheme.error)),
-                  ],
-                ),
+                if (Responsive.isNarrow(context))
+                  Column(
+                    children: <Widget>[
+                      _StatMiniCard(label: 'مكتملة', value: overview.stats.completed.toString(), color: const Color(0xFF2E7D32)),
+                      const SizedBox(height: 10),
+                      _StatMiniCard(label: 'معلقة', value: overview.stats.pending.toString(), color: const Color(0xFFF57C00)),
+                      const SizedBox(height: 10),
+                      _StatMiniCard(label: 'مرفوضة', value: overview.stats.rejected.toString(), color: theme.colorScheme.error),
+                    ],
+                  )
+                else
+                  Row(
+                    children: <Widget>[
+                      Expanded(child: _StatMiniCard(label: 'مكتملة', value: overview.stats.completed.toString(), color: const Color(0xFF2E7D32))),
+                      const SizedBox(width: 12),
+                      Expanded(child: _StatMiniCard(label: 'معلقة', value: overview.stats.pending.toString(), color: const Color(0xFFF57C00))),
+                      const SizedBox(width: 12),
+                      Expanded(child: _StatMiniCard(label: 'مرفوضة', value: overview.stats.rejected.toString(), color: theme.colorScheme.error)),
+                    ],
+                  ),
                 const SizedBox(height: 32),
                 
                 for (final metric in overview.metrics) ...<Widget>[

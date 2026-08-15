@@ -62,5 +62,5 @@ AuthException toAuthException(Object error) {
   if (error is ApiException) {
     return AuthException(error.message, statusCode: error.statusCode);
   }
-  return AuthException(JsonMap.str(error, 'Request failed'));
+  return AuthException(JsonMap.str(error, 'فشل الطلب'));
 }

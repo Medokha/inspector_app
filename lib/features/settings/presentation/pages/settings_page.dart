@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 import 'package:inspector_app/features/auth/presentation/pages/reset_password_page.dart';
@@ -52,7 +53,12 @@ class _SettingsPageState extends State<SettingsPage> {
           body: settings == null
               ? const Center(child: CircularProgressIndicator())
               : ListView(
-                  padding: ScreenInsets.list(context, horizontal: 20, top: 16, extraBottom: 40),
+                  padding: ScreenInsets.list(
+                    context,
+                    horizontal: Responsive.pagePadding(context),
+                    top: 16,
+                    extraBottom: 40,
+                  ),
                   children: <Widget>[
                     // User Header Card
                     Card(
@@ -121,13 +127,13 @@ class _SettingsPageState extends State<SettingsPage> {
                       title: 'التطبيق',
                       children: [
                         _SettingsSwitch(
-                          label: 'الوضع الليلي (Dark Mode)',
+                          label: 'الوضع الليلي',
                           icon: Icons.dark_mode_outlined,
                           value: settings.isDarkMode,
                           onChanged: (value) => _update(settings.copyWith(isDarkMode: value)),
                         ),
                         _SettingsSwitch(
-                          label: 'تحميل الخرائط Offline',
+                          label: 'تحميل الخرائط دون اتصال',
                           icon: Icons.map_outlined,
                           value: settings.offlineMapsEnabled,
                           onChanged: (value) => _update(settings.copyWith(offlineMapsEnabled: value)),
@@ -296,12 +302,18 @@ class _InfoTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: theme.colorScheme.primary.withOpacity(0.7), size: 20),
       title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-      trailing: Text(
-        value,
-        style: TextStyle(
-          fontSize: 13,
-          color: theme.colorScheme.onSurface.withOpacity(0.5),
-          fontWeight: FontWeight.w500,
+      trailing: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.35),
+        child: Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.end,
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),

@@ -6,6 +6,7 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
 import 'package:inspector_app/core/theme/app_theme.dart';
+import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
 import 'package:inspector_app/features/main/presentation/pages/main_shell_page.dart';
 
@@ -64,6 +65,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final logoSize = Responsive.logoSize(context, max: 200, min: 110);
+    final short = Responsive.isShort(context);
 
     return Scaffold(
       body: Container(
@@ -81,95 +84,118 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
           ),
         ),
         child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Column(
-                children: <Widget>[
-                  const Spacer(flex: 2),
-                  Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Hero(
-                        tag: 'app_logo',
-                        child: Material(
-                          color: Colors.transparent,
-                          child: Container(
-                            width: 220,
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: <BoxShadow>[
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.28),
-                                  blurRadius: 28,
-                                  offset: const Offset(0, 14),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: <Widget>[
+                            SizedBox(height: short ? 24 : 48),
+                            const Spacer(flex: 2),
+                            Opacity(
+                              opacity: _fadeAnimation.value,
+                              child: Transform.scale(
+                                scale: _scaleAnimation.value,
+                                child: Hero(
+                                  tag: 'app_logo',
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: Container(
+                                      width: logoSize,
+                                      padding: EdgeInsets.all(logoSize * 0.08),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(28),
+                                        boxShadow: <BoxShadow>[
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.28),
+                                            blurRadius: 28,
+                                            offset: const Offset(0, 14),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Image.asset(
+                                        'assets/images/logo.png',
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Icon(
+                                            Icons.verified,
+                                            size: logoSize * 0.42,
+                                            color: theme.colorScheme.primary,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ],
+                              ),
                             ),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(Icons.verified, size: 96, color: theme.colorScheme.primary);
-                              },
+                            SizedBox(height: short ? 20 : 36),
+                            Opacity(
+                              opacity: _textAnimation.value,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Column(
+                                  children: <Widget>[
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'المفتش',
+                                        style: theme.textTheme.displaySmall?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          color: AppTheme.accentGold,
+                                          letterSpacing: 1.2,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'ديوان الوقف السني',
+                                      textAlign: TextAlign.center,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.88),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      strings.splashLoading,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white.withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                            const Spacer(flex: 2),
+                            Opacity(
+                              opacity: _textAnimation.value,
+                              child: Padding(
+                                padding: EdgeInsets.only(bottom: short ? 20 : 36, top: 16),
+                                child: SizedBox(
+                                  width: 42,
+                                  height: 42,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accentGold),
+                                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 36),
-                  Opacity(
-                    opacity: _textAnimation.value,
-                    child: Column(
-                      children: <Widget>[
-                        Text(
-                          'المفتش',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.accentGold,
-                            letterSpacing: 1.2,
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'ديوان الوقف السني',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          strings.splashLoading,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.55),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(flex: 2),
-                  Opacity(
-                    opacity: _textAnimation.value,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 36),
-                      child: SizedBox(
-                        width: 42,
-                        height: 42,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accentGold),
-                          backgroundColor: Colors.white.withValues(alpha: 0.12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                },
               );
             },
           ),
