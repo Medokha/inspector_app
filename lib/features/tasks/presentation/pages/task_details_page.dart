@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,11 +8,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
+import 'package:inspector_app/features/tasks/domain/entities/satellite_analysis_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_step_entity.dart';
 import 'package:inspector_app/features/tasks/presentation/controller/task_details_controller.dart';
 import 'package:inspector_app/features/tasks/presentation/pages/report_page.dart';
 import 'package:inspector_app/features/tasks/domain/quality/previous_visit_photo.dart';
+import 'package:inspector_app/features/tasks/presentation/pages/satellite_map_fullscreen_page.dart';
+import 'package:inspector_app/features/tasks/presentation/widgets/satellite_image_viewer.dart';
 import 'package:inspector_app/features/tasks/presentation/widgets/task_location_map_preview.dart';
 
 class TaskDetailsPage extends StatefulWidget {
@@ -29,13 +35,114 @@ class TaskDetailsPage extends StatefulWidget {
 class _TaskDetailsPageState extends State<TaskDetailsPage> {
   late final TaskDetailsController _controller;
   bool _autoStartTried = false;
+  bool _autoAnalyzeTried = false;
+  bool _proximityWatchStarted = false;
+  bool _startDialogVisible = false;
+  bool _useSatelliteMap = true;
 
   @override
   void initState() {
     super.initState();
     _controller = createTaskDetailsController();
-    _controller.addListener(_maybeAutoStart);
+    _controller.addListener(_onControllerTick);
     _controller.load(widget.taskId);
+  }
+
+  void _onControllerTick() {
+    _maybeAutoStart();
+    _maybeAutoAnalyze();
+    _maybeStartProximityWatch();
+    _maybeShowStartPrompt();
+  }
+
+  void _maybeStartProximityWatch() {
+    if (_proximityWatchStarted || _controller.isLoading) return;
+    final details = _controller.details;
+    if (details == null || !details.canStart || !details.hasLocation) return;
+    _proximityWatchStarted = true;
+    unawaited(_controller.beginStartProximityWatch());
+  }
+
+  void _maybeShowStartPrompt() {
+    if (_startDialogVisible || !_controller.showStartPrompt) return;
+    _controller.clearStartPrompt();
+    _startDialogVisible = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _startDialogVisible = false;
+        return;
+      }
+      unawaited(_showStartProximityDialog());
+    });
+  }
+
+  Future<void> _showStartProximityDialog() async {
+    final details = _controller.details;
+    if (details == null || !details.canStart) {
+      _startDialogVisible = false;
+      return;
+    }
+
+    final distance = _controller.distanceToSiteMeters?.round();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return AlertDialog(
+          icon: Icon(Icons.location_on_rounded, color: theme.colorScheme.primary, size: 36),
+          title: const Text('وصلت لموقع المهمة'),
+          content: Text(
+            distance == null
+                ? 'أنت ضمن ${_controller.startRadiusMeters.round()} م من موقع المهمة.\nهل تريد بدء المهمة والتتبع الآن؟'
+                : 'أنت على بعد $distance م من الموقع (ضمن ${_controller.startRadiusMeters.round()} م).\nهل تريد بدء المهمة والتتبع الآن؟',
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('لاحقاً'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('بدء المهمة'),
+            ),
+          ],
+        );
+      },
+    );
+
+    _startDialogVisible = false;
+    if (!mounted || confirmed != true) return;
+
+    final ok = await _controller.start(widget.taskId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'تم بدء المهمة وبدأ التتبع' : (_controller.error ?? 'تعذر بدء المهمة')),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _startTaskWithFeedback() async {
+    final ok = await _controller.start(widget.taskId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'تم بدء المهمة وبدأ التتبع' : (_controller.error ?? 'تعذر بدء المهمة')),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _maybeAutoAnalyze() {
+    if (_autoAnalyzeTried || _controller.isLoading || _controller.isAnalyzing) return;
+    final details = _controller.details;
+    if (details == null || !details.hasLocation || details.satelliteAnalysis != null) return;
+    _autoAnalyzeTried = true;
+    unawaited(_controller.ensureSatelliteAnalysis(widget.taskId));
   }
 
   void _maybeAutoStart() {
@@ -43,16 +150,17 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     final details = _controller.details;
     if (details == null || _controller.isLoading) return;
     _autoStartTried = true;
-    if (details.canStart) {
-      _controller.start(widget.taskId);
-    } else if (details.isTracking) {
+    if (details.isTracking) {
       // المهمة جارية بالفعل — التتبع يُستأنف من load
+    } else if (details.canStart && details.hasLocation) {
+      // لا نبدأ تلقائياً — ننتظر الوصول لنطاق 200 م ونافذة البدء
+      _maybeStartProximityWatch();
     }
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_maybeAutoStart);
+    _controller.removeListener(_onControllerTick);
     _controller.dispose();
     super.dispose();
   }
@@ -133,6 +241,110 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  List<Widget> _satelliteAnalysisWidgets(ThemeData theme, SatelliteAnalysisEntity sat) {
+    final riskColor = switch (sat.riskLevel) {
+      'Critical' || 'High' => theme.colorScheme.error,
+      'Medium' => const Color(0xFFAF9748),
+      _ => Colors.green.shade700,
+    };
+    return <Widget>[
+      if ((sat.snapshotUrl != null && sat.snapshotUrl!.isNotEmpty) ||
+          (sat.previousSnapshotUrl != null && sat.previousSnapshotUrl!.isNotEmpty)) ...<Widget>[
+        Row(
+          children: <Widget>[
+            if (sat.snapshotUrl != null && sat.snapshotUrl!.isNotEmpty)
+              Expanded(
+                child: SatelliteImageViewer(
+                  url: sat.snapshotUrl!,
+                  label: 'الحالية',
+                  height: 180,
+                ),
+              ),
+            if (sat.previousSnapshotUrl != null && sat.previousSnapshotUrl!.isNotEmpty) ...<Widget>[
+              const SizedBox(width: 8),
+              Expanded(
+                child: SatelliteImageViewer(
+                  url: sat.previousSnapshotUrl!,
+                  label: 'السابقة',
+                  height: 180,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 10),
+      ],
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: <Widget>[
+          Chip(
+            label: Text('مخاطر: ${sat.riskLabelAr}'),
+            backgroundColor: riskColor.withValues(alpha: 0.15),
+            labelStyle: TextStyle(color: riskColor, fontWeight: FontWeight.w800),
+          ),
+          Chip(label: Text('اهتمام ${sat.attentionScore}/100')),
+          Chip(label: Text('تغيّر ${sat.changeScore}/100')),
+          Chip(label: Text(sat.analysisEngine)),
+        ],
+      ),
+      const SizedBox(height: 8),
+      Text(sat.summaryAr, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, height: 1.45)),
+      if (sat.fieldConsistencyNote != null && sat.fieldConsistencyNote!.isNotEmpty) ...<Widget>[
+        const SizedBox(height: 8),
+        Text(
+          sat.fieldConsistencyNote!,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+        ),
+      ],
+      if (sat.findings.isNotEmpty) ...<Widget>[
+        const SizedBox(height: 10),
+        Text('الملاحظات', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+        ...sat.findings.map(
+          (f) => Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text('• '),
+                Expanded(child: Text(f)),
+              ],
+            ),
+          ),
+        ),
+      ],
+      if (sat.recommendations.isNotEmpty) ...<Widget>[
+        const SizedBox(height: 10),
+        Text('التوصيات', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+        ...sat.recommendations.map(
+          (r) => Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text('• '),
+                Expanded(child: Text(r)),
+              ],
+            ),
+          ),
+        ),
+      ],
+      if (_controller.satelliteHistory.length > 1) ...<Widget>[
+        const SizedBox(height: 12),
+        Text('سجل التحليلات', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900)),
+        ..._controller.satelliteHistory.take(5).map(
+          (h) => Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              '${'${h.analyzedAt.toLocal()}'.split('.').first} — ${h.riskLabelAr} · اهتمام ${h.attentionScore} · تغيّر ${h.changeScore}',
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+        ),
+      ],
+    ];
   }
 
   void _showReportSheet(TaskDetailsEntity details) {
@@ -310,6 +522,14 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+                if (details.canStart && details.hasLocation)
+                  _StartTaskGuidanceBanner(
+                    radiusMeters: _controller.startRadiusMeters,
+                    distanceMeters: _controller.distanceToSiteMeters,
+                    isWithinRadius: _controller.isWithinStartRadius,
+                    onNavigate: () => _openNavigation(details),
+                  ),
+                if (details.canStart && details.hasLocation) const SizedBox(height: 16),
                 _SectionCard(
                   title: 'بيانات المهمة',
                   icon: Icons.assignment_outlined,
@@ -404,7 +624,36 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                         TaskLocationMapPreview(
                           latitude: details.latitude!,
                           longitude: details.longitude!,
+                          useSatellite: _useSatelliteMap,
                           onOpenExternal: () => _openNavigation(details),
+                          onOpenFullscreen: () async {
+                            final captured = await Navigator.of(context).push<Uint8List>(
+                              MaterialPageRoute<Uint8List>(
+                                fullscreenDialog: true,
+                                builder: (_) => SatelliteMapFullscreenPage(
+                                  latitude: details.latitude!,
+                                  longitude: details.longitude!,
+                                  title: details.task.title,
+                                ),
+                              ),
+                            );
+                            if (!mounted || captured == null || captured.isEmpty) return;
+                            final ok = await _controller.runSatelliteAnalysis(
+                              widget.taskId,
+                              snapshotBytes: captured,
+                            );
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ok != null
+                                      ? 'تم حفظ لقطة الشاشة وتحليلها — مخاطر: ${ok.riskLabelAr}'
+                                      : (_controller.error ?? 'فشل تحليل اللقطة'),
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
                         )
                       else
                         Container(
@@ -429,11 +678,114 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                         ),
                       if (details.hasLocation) ...<Widget>[
                         const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          children: <Widget>[
+                            FilterChip(
+                              label: const Text('قمر صناعي'),
+                              selected: _useSatelliteMap,
+                              onSelected: (_) => setState(() => _useSatelliteMap = true),
+                            ),
+                            FilterChip(
+                              label: const Text('خريطة شوارع'),
+                              selected: !_useSatelliteMap,
+                              onSelected: (_) => setState(() => _useSatelliteMap = false),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         Text(
-                          'حرّك الخريطة للمعاينة، أو اضغط ملاحة للفتح في الخرائط',
+                          'حرّك الخريطة وقرّب بإصبعين، أو اضغط ملء الشاشة ثم «التقاط» لحفظ المنظر الحالي',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                           ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'تحليل قمري + AI',
+                  icon: Icons.satellite_alt_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (!details.hasLocation)
+                        Text('لا توجد إحداثيات — لا يمكن جلب صورة قمرية.', style: theme.textTheme.bodyMedium)
+                      else ...<Widget>[
+                        if (details.satelliteAnalysis != null)
+                          ..._satelliteAnalysisWidgets(theme, details.satelliteAnalysis!),
+                        if (details.satelliteAnalysis == null)
+                          Text(
+                            'احصل على لقطة قمرية وتحليل ذكي للموقع قبل/أثناء الزيارة.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: _controller.isAnalyzing
+                              ? null
+                              : () async {
+                                  final ok = await _controller.runSatelliteAnalysis(widget.taskId);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok != null
+                                            ? 'تم التحليل — مخاطر: ${ok.riskLabelAr}'
+                                            : (_controller.error ?? 'فشل التحليل'),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                          icon: _controller.isAnalyzing
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.auto_awesome),
+                          label: Text(
+                            details.satelliteAnalysis == null ? 'جلب لقطة وتحليل' : 'تحديث التحليل',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _controller.isAnalyzing
+                              ? null
+                              : () async {
+                                  final captured = await Navigator.of(context).push<Uint8List>(
+                                    MaterialPageRoute<Uint8List>(
+                                      fullscreenDialog: true,
+                                      builder: (_) => SatelliteMapFullscreenPage(
+                                        latitude: details.latitude!,
+                                        longitude: details.longitude!,
+                                        title: details.task.title,
+                                      ),
+                                    ),
+                                  );
+                                  if (!mounted || captured == null || captured.isEmpty) return;
+                                  final ok = await _controller.runSatelliteAnalysis(
+                                    widget.taskId,
+                                    snapshotBytes: captured,
+                                  );
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ok != null
+                                            ? 'تم حفظ لقطة الشاشة وتحليلها — مخاطر: ${ok.riskLabelAr}'
+                                            : (_controller.error ?? 'فشل تحليل اللقطة'),
+                                      ),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                          icon: const Icon(Icons.fullscreen),
+                          label: const Text('التقاط من ملء الشاشة'),
                         ),
                       ],
                     ],
@@ -577,20 +929,32 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: _controller.isStarting
+                      onPressed: _controller.isStarting ||
+                              (details.hasLocation && !_controller.isWithinStartRadius)
                           ? null
-                          : () async {
-                              final ok = await _controller.start(widget.taskId);
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(ok ? 'تم بدء المهمة وبدأ التتبع' : (_controller.error ?? 'تعذر بدء المهمة')),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
+                          : _startTaskWithFeedback,
                       icon: const Icon(Icons.play_arrow_rounded),
-                      label: Text(_controller.isStarting ? 'جارٍ البدء...' : 'بدء المهمة والتتبع'),
+                      label: Text(
+                        _controller.isStarting
+                            ? 'جارٍ البدء...'
+                            : _controller.isWithinStartRadius || !details.hasLocation
+                                ? 'بدء المهمة والتتبع'
+                                : 'اقترب من الموقع للبدء',
+                      ),
+                    ),
+                  ),
+                if (details.canStart && details.hasLocation && !_controller.isWithinStartRadius)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _controller.distanceToSiteMeters == null
+                          ? 'جاري تحديد موقعك...'
+                          : 'يجب أن تكون ضمن ${_controller.startRadiusMeters.round()} م — موقعك الحالي يبعد ${_controller.distanceToSiteMeters!.round()} م',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 if (details.canStart) const SizedBox(height: 12),
@@ -938,5 +1302,102 @@ class _StepStyle {
       case TaskStepStatus.pending:
         return _StepStyle(theme.colorScheme.onSurface.withOpacity(0.3));
     }
+  }
+}
+
+class _StartTaskGuidanceBanner extends StatelessWidget {
+  const _StartTaskGuidanceBanner({
+    required this.radiusMeters,
+    required this.distanceMeters,
+    required this.isWithinRadius,
+    required this.onNavigate,
+  });
+
+  final double radiusMeters;
+  final double? distanceMeters;
+  final bool isWithinRadius;
+  final VoidCallback onNavigate;
+
+  String _distanceLabel(double meters) {
+    if (meters < 1000) return '${meters.round()} م';
+    return '${(meters / 1000).toStringAsFixed(1)} كم';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = isWithinRadius ? Colors.green.shade700 : const Color(0xFFAF9748);
+    final bg = isWithinRadius
+        ? Colors.green.withValues(alpha: 0.08)
+        : theme.colorScheme.primary.withValues(alpha: 0.06);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                isWithinRadius ? Icons.check_circle_outline : Icons.info_outline,
+                color: accent,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'إرشادات بدء المهمة',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'لا يمكن بدء المهمة إلا وأنت ضمن ${radiusMeters.round()} متر من موقع المهمة.',
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.45, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'توجّه إلى الموقع — عند وصولك سيظهر تنبيه لبدء المهمة والتتبع تلقائياً.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Icon(Icons.social_distance, size: 18, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  distanceMeters == null
+                      ? 'جاري تحديد موقعك...'
+                      : isWithinRadius
+                          ? 'أنت ضمن النطاق — ${_distanceLabel(distanceMeters!)} من الموقع'
+                          : 'بعدك عن الموقع: ${_distanceLabel(distanceMeters!)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onNavigate,
+            icon: const Icon(Icons.navigation_outlined),
+            label: const Text('فتح التوجيه للموقع'),
+          ),
+        ],
+      ),
+    );
   }
 }

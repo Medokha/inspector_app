@@ -466,6 +466,16 @@ class _TaskCard extends StatelessWidget {
                 task.title,
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
               ),
+              if (task.satelliteRiskLevel == 'High' ||
+                  task.satelliteRiskLevel == 'Critical' ||
+                  task.satelliteRiskLevel == 'Medium') ...<Widget>[
+                const SizedBox(height: 8),
+                Chip(
+                  visualDensity: VisualDensity.compact,
+                  avatar: const Icon(Icons.satellite_alt, size: 16),
+                  label: Text('قمري: ${task.satelliteRiskLevel}'),
+                ),
+              ],
               const SizedBox(height: 8),
               Row(
                 children: [

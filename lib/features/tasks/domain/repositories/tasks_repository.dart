@@ -1,5 +1,6 @@
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
+import 'package:inspector_app/features/tasks/domain/entities/satellite_analysis_entity.dart';
 
 abstract class TasksRepository {
   Future<List<TaskEntity>> getTasks({
@@ -25,4 +26,12 @@ abstract class TasksRepository {
     List<({List<int> bytes, String filename})> photoFiles =
         const <({List<int> bytes, String filename})>[],
   });
+
+  Future<SatelliteAnalysisEntity> runSatelliteAnalysis(
+    String taskId, {
+    bool forceRefresh = true,
+    List<int>? snapshotBytes,
+  });
+
+  Future<List<SatelliteAnalysisEntity>> getSatelliteHistory(String taskId);
 }

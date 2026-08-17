@@ -26,8 +26,12 @@ class ApiClient {
     return _send('GET', path, query: query);
   }
 
-  Future<Map<String, dynamic>> post(String path, {Object? body}) async {
-    final json = await _send('POST', path, body: body);
+  Future<Map<String, dynamic>> post(
+    String path, {
+    Object? body,
+    Duration? timeout,
+  }) async {
+    final json = await _send('POST', path, body: body, timeout: timeout);
     return _asMap(json);
   }
 
@@ -60,7 +64,7 @@ class ApiClient {
         }
         request.files.addAll(files);
 
-        final streamed = await _client.send(request).timeout(const Duration(seconds: 60));
+        final streamed = await _client.send(request).timeout(const Duration(seconds: 90));
         final response = await http.Response.fromStream(streamed);
         final decoded = _decode(response.body);
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -90,11 +94,19 @@ class ApiClient {
     String path, {
     Object? body,
     Map<String, String>? query,
+    Duration? timeout,
   }) async {
     Object? lastError;
     for (final base in ApiConfig.candidateBaseUrls) {
       try {
-        final result = await _sendTo(base, method, path, body: body, query: query);
+        final result = await _sendTo(
+          base,
+          method,
+          path,
+          body: body,
+          query: query,
+          timeout: timeout,
+        );
         ApiConfig.remember(base);
         return result;
       } on ApiException catch (error) {
@@ -116,6 +128,7 @@ class ApiClient {
     String path, {
     Object? body,
     Map<String, String>? query,
+    Duration? timeout,
   }) async {
     var uri = Uri.parse('$base$path');
     if (query != null && query.isNotEmpty) {
@@ -130,20 +143,21 @@ class ApiClient {
     };
 
     final encoded = body == null ? null : jsonEncode(body);
+    final wait = timeout ?? const Duration(seconds: 12);
     late http.Response response;
     try {
       switch (method) {
         case 'POST':
-          response = await _client.post(uri, headers: headers, body: encoded).timeout(const Duration(seconds: 12));
+          response = await _client.post(uri, headers: headers, body: encoded).timeout(wait);
           break;
         case 'PUT':
-          response = await _client.put(uri, headers: headers, body: encoded).timeout(const Duration(seconds: 12));
+          response = await _client.put(uri, headers: headers, body: encoded).timeout(wait);
           break;
         case 'PATCH':
-          response = await _client.patch(uri, headers: headers, body: encoded).timeout(const Duration(seconds: 12));
+          response = await _client.patch(uri, headers: headers, body: encoded).timeout(wait);
           break;
         default:
-          response = await _client.get(uri, headers: headers).timeout(const Duration(seconds: 12));
+          response = await _client.get(uri, headers: headers).timeout(wait);
       }
     } catch (error) {
       throw ApiException(_networkMessage(error, base));

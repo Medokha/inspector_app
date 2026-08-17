@@ -85,6 +85,9 @@ class ApiMappers {
       latitude: JsonMap.asDouble(json['latitude']),
       longitude: JsonMap.asDouble(json['longitude']),
       dueDate: parseDate(json['dueDate']),
+      satelliteRiskLevel: JsonMap.str(json['satelliteRiskLevel']).isEmpty
+          ? null
+          : JsonMap.str(json['satelliteRiskLevel']),
     );
   }
 

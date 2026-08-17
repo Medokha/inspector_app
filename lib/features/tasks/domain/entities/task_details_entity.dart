@@ -1,4 +1,5 @@
 import 'package:inspector_app/core/security/audit_trail_presenter.dart';
+import 'package:inspector_app/features/tasks/domain/entities/satellite_analysis_entity.dart';
 
 import 'task_entity.dart';
 import 'task_status.dart';
@@ -56,6 +57,7 @@ class TaskDetailsEntity {
     this.longitude,
     this.report,
     this.auditTrail = const <AuditTrailEntry>[],
+    this.satelliteAnalysis,
   });
 
   final TaskEntity task;
@@ -70,6 +72,7 @@ class TaskDetailsEntity {
   final double? longitude;
   final TaskReportEntity? report;
   final List<AuditTrailEntry> auditTrail;
+  final SatelliteAnalysisEntity? satelliteAnalysis;
 
   bool get hasLocation => latitude != null && longitude != null;
 

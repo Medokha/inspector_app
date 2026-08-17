@@ -51,6 +51,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: 'تقرير احترافي',
       body: 'قوالب حسب نوع الوقف، قائمة تحقق، تعليق صوتي، ومقارنة قبل/بعد.',
     ),
+    _OnboardSlide(
+      icon: Icons.satellite_alt_outlined,
+      title: 'تحليل قمري ذكي',
+      body: 'شاهد الموقع من القمر الصناعي واحصل على تقييم مخاطر وتغيّر لمساعدة الزيارة والإدارة.',
+    ),
   ];
 
   Future<void> _finish() async {

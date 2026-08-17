@@ -13,6 +13,7 @@ class TaskEntity {
     this.latitude,
     this.longitude,
     this.dueDate,
+    this.satelliteRiskLevel,
   });
 
   final String id;
@@ -26,6 +27,7 @@ class TaskEntity {
   final double? latitude;
   final double? longitude;
   final DateTime? dueDate;
+  final String? satelliteRiskLevel;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'id': id,
@@ -39,6 +41,7 @@ class TaskEntity {
         'latitude': latitude,
         'longitude': longitude,
         'dueDate': dueDate?.toIso8601String(),
+        'satelliteRiskLevel': satelliteRiskLevel,
       };
 
   factory TaskEntity.fromJson(Map<String, dynamic> json) {
@@ -60,6 +63,7 @@ class TaskEntity {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       dueDate: DateTime.tryParse(json['dueDate']?.toString() ?? ''),
+      satelliteRiskLevel: json['satelliteRiskLevel']?.toString(),
     );
   }
 }

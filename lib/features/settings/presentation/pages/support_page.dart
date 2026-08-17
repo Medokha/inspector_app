@@ -124,11 +124,7 @@ class SupportPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => _mail(context),
-            icon: const Icon(Icons.send_outlined),
-            label: const Text('إرسال رسالة دعم'),
-          ),
+
         ],
       ),
     );

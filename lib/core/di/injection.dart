@@ -108,6 +108,7 @@ TaskDetailsController createTaskDetailsController() {
     getTaskDetails: GetTaskDetailsUseCase(_tasksRepository),
     startTask: StartTaskUseCase(_tasksRepository),
     tracking: _trackingService,
+    tasksRepository: _tasksRepository,
   );
 }
 

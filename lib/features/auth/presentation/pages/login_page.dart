@@ -204,25 +204,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              strings.loginSubtitle,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (kDebugMode) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                ApiConfig.baseUrl,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+
                             const SizedBox(height: 32),
                             Card(
                               elevation: 0,

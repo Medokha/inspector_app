@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:inspector_app/features/tasks/presentation/widgets/satellite_tiles.dart';
 import 'package:latlong2/latlong.dart';
 
-/// معاينة خريطة حية لموقع المهمة (OpenStreetMap).
+/// معاينة خريطة حية لموقع المهمة (شارع أو قمر صناعي).
 class TaskLocationMapPreview extends StatelessWidget {
   const TaskLocationMapPreview({
     super.key,
     required this.latitude,
     required this.longitude,
     this.onOpenExternal,
+    this.onOpenFullscreen,
     this.height = 220,
+    this.useSatellite = false,
   });
 
   final double latitude;
   final double longitude;
   final VoidCallback? onOpenExternal;
+  final VoidCallback? onOpenFullscreen;
   final double height;
+  final bool useSatellite;
 
   @override
   Widget build(BuildContext context) {
@@ -34,17 +39,30 @@ class TaskLocationMapPreview extends StatelessWidget {
             FlutterMap(
               options: MapOptions(
                 initialCenter: point,
-                initialZoom: 15.2,
+                initialZoom: useSatellite ? SatelliteTiles.defaultZoom : 16.2,
+                minZoom: useSatellite ? SatelliteTiles.minZoom : 12,
+                maxZoom: useSatellite ? SatelliteTiles.maxZoom : 19,
                 interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.drag | InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom,
+                  flags: InteractiveFlag.drag |
+                      InteractiveFlag.pinchZoom |
+                      InteractiveFlag.pinchMove |
+                      InteractiveFlag.doubleTapZoom |
+                      InteractiveFlag.scrollWheelZoom |
+                      InteractiveFlag.flingAnimation,
                 ),
               ),
               children: <Widget>[
                 TileLayer(
-                  urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                  subdomains: const <String>['a', 'b', 'c', 'd'],
+                  urlTemplate: useSatellite
+                      ? SatelliteTiles.googleUrl
+                      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                  subdomains: useSatellite
+                      ? SatelliteTiles.googleSubdomains
+                      : const <String>['a', 'b', 'c', 'd'],
                   userAgentPackageName: 'iq.gov.swa.inspector',
-                  retinaMode: RetinaMode.isHighDensity(context),
+                  retinaMode: useSatellite ? false : RetinaMode.isHighDensity(context),
+                  maxNativeZoom: useSatellite ? SatelliteTiles.nativeZoom : 20,
+                  maxZoom: useSatellite ? SatelliteTiles.maxZoom : 20,
                 ),
                 CircleLayer(
                   circles: <CircleMarker>[
@@ -111,7 +129,7 @@ class TaskLocationMapPreview extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '© OpenStreetMap © CARTO',
+                  useSatellite ? '© صور الأقمار — قرّب بإصبعين' : '© OpenStreetMap © CARTO',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: Colors.black54,
                     fontSize: 10,
@@ -152,6 +170,35 @@ class TaskLocationMapPreview extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
+                  if (onOpenFullscreen != null)
+                    Material(
+                      color: Colors.black.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(999),
+                      elevation: 2,
+                      child: InkWell(
+                        onTap: onOpenFullscreen,
+                        borderRadius: BorderRadius.circular(999),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(Icons.fullscreen, color: Colors.white, size: 16),
+                              SizedBox(width: 6),
+                              Text(
+                                'ملء الشاشة',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (onOpenFullscreen != null && onOpenExternal != null) const SizedBox(height: 8),
                   if (onOpenExternal != null)
                     Material(
                       color: primary,

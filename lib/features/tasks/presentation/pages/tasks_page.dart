@@ -208,6 +208,21 @@ class _TaskTile extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
+                    if (task.satelliteRiskLevel == 'High' ||
+                        task.satelliteRiskLevel == 'Critical' ||
+                        task.satelliteRiskLevel == 'Medium') ...<Widget>[
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Chip(
+                          visualDensity: VisualDensity.compact,
+                          label: Text('قمري: ${task.satelliteRiskLevel}'),
+                          backgroundColor: (task.satelliteRiskLevel == 'Critical' || task.satelliteRiskLevel == 'High')
+                              ? theme.colorScheme.error.withValues(alpha: 0.12)
+                              : const Color(0xFFAF9748).withValues(alpha: 0.15),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: [

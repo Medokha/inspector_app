@@ -4,6 +4,7 @@ import 'package:inspector_app/core/di/injection.dart';
 import 'package:inspector_app/core/localization/app_localizations.dart';
 import 'package:inspector_app/core/routing/page_transitions.dart';
 import 'package:inspector_app/core/security/biometric_auth_service.dart';
+import 'package:inspector_app/core/notifications/notification_prefs.dart';
 import 'package:inspector_app/core/ui/responsive.dart';
 import 'package:inspector_app/core/ui/screen_insets.dart';
 import 'package:inspector_app/features/auth/presentation/pages/login_page.dart';
@@ -24,6 +25,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late final SettingsController _controller;
   bool _biometricEnabled = false;
   bool _biometricSupported = false;
+  bool _satelliteAlerts = true;
 
   @override
   void initState() {
@@ -31,6 +33,13 @@ class _SettingsPageState extends State<SettingsPage> {
     _controller = createSettingsController();
     _controller.load();
     _loadBiometric();
+    _loadSatelliteAlerts();
+  }
+
+  Future<void> _loadSatelliteAlerts() async {
+    final v = await NotificationPrefs.satelliteRiskAlerts;
+    if (!mounted) return;
+    setState(() => _satelliteAlerts = v);
   }
 
   Future<void> _loadBiometric() async {
@@ -132,6 +141,16 @@ class _SettingsPageState extends State<SettingsPage> {
                           value: settings.deadlineReminders,
                           onChanged: (value) => _update(settings.copyWith(deadlineReminders: value)),
                         ),
+                        _SettingsSwitch(
+                          label: 'تنبيهات المخاطر القمرية',
+                          icon: Icons.satellite_alt_outlined,
+                          value: _satelliteAlerts,
+                          onChanged: (value) async {
+                            await NotificationPrefs.setSatelliteRiskAlerts(value);
+                            if (!mounted) return;
+                            setState(() => _satelliteAlerts = value);
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -180,16 +199,6 @@ class _SettingsPageState extends State<SettingsPage> {
                               setState(() => _biometricEnabled = value);
                             },
                           ),
-                        _InfoTile(
-                          label: 'حجم ذاكرة التخزين',
-                          icon: Icons.storage_outlined,
-                          value: settings.storageUsedLabel,
-                        ),
-                        _InfoTile(
-                          label: 'نسخة التطبيق',
-                          icon: Icons.info_outline,
-                          value: settings.appVersion,
-                        ),
                       ],
                     ),
                     const SizedBox(height: 20),

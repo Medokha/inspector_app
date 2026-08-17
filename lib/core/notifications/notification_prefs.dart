@@ -7,22 +7,38 @@ class NotificationPrefs {
   static const newTasksKey = 'inspector_notify_new_tasks';
   static const reportApprovalsKey = 'inspector_notify_report_approvals';
   static const deadlineRemindersKey = 'inspector_notify_deadline';
+  static const satelliteRiskKey = 'inspector_notify_satellite_risk';
 
   static const categoryNewTask = 'new_task';
   static const categoryReportApproval = 'report_approval';
   static const categoryDeadline = 'deadline';
   static const categoryPassword = 'password';
   static const categoryGeneral = 'general';
+  static const categorySatelliteRisk = 'satellite_risk';
 
   static Future<void> save({
     required bool newTasks,
     required bool reportApprovals,
     required bool deadlineReminders,
+    bool? satelliteRisk,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(newTasksKey, newTasks);
     await prefs.setBool(reportApprovalsKey, reportApprovals);
     await prefs.setBool(deadlineRemindersKey, deadlineReminders);
+    if (satelliteRisk != null) {
+      await prefs.setBool(satelliteRiskKey, satelliteRisk);
+    }
+  }
+
+  static Future<bool> get satelliteRiskAlerts async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(satelliteRiskKey) ?? true;
+  }
+
+  static Future<void> setSatelliteRiskAlerts(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(satelliteRiskKey, value);
   }
 
   static Future<bool> get newTasks async {
@@ -64,6 +80,10 @@ class NotificationPrefs {
       case categoryDeadline:
       case 'reminder':
         return prefs.getBool(deadlineRemindersKey) ?? true;
+      case categorySatelliteRisk:
+      case 'satellite':
+      case 'satelliteai':
+        return prefs.getBool(satelliteRiskKey) ?? true;
       default:
         return true;
     }

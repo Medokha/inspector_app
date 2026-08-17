@@ -1,8 +1,10 @@
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:inspector_app/core/config/api_config.dart';
 import 'package:inspector_app/core/network/api_client.dart';
 import 'package:inspector_app/core/network/api_mappers.dart';
 import 'package:inspector_app/core/security/audit_trail_presenter.dart';
+import 'package:inspector_app/features/tasks/domain/entities/satellite_analysis_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_details_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_entity.dart';
 import 'package:inspector_app/features/tasks/domain/entities/task_status.dart';
@@ -82,6 +84,12 @@ class TasksRepositoryImpl implements TasksRepository {
       auditTrail = AuditTrailPresenter.fromHistoryMaps(JsonMap.mapList(historyJson));
     } catch (_) {}
 
+    SatelliteAnalysisEntity? satelliteAnalysis;
+    final satRaw = json['satelliteAnalysis'];
+    if (satRaw is Map) {
+      satelliteAnalysis = SatelliteAnalysisEntity.fromJson(JsonMap.map(satRaw)).withAbsoluteUrls(ApiConfig.baseUrl);
+    }
+
     return TaskDetailsEntity(
       task: task,
       code: JsonMap.str(json['id']).replaceAll('-', '').toUpperCase().substring(
@@ -94,6 +102,7 @@ class TasksRepositoryImpl implements TasksRepository {
       latitude: lat,
       longitude: lng,
       auditTrail: auditTrail,
+      satelliteAnalysis: satelliteAnalysis,
       steps: <TaskStepEntity>[
         TaskStepEntity(
           title: 'بيانات الموقع',
@@ -203,6 +212,44 @@ class TasksRepositoryImpl implements TasksRepository {
         'reportNotes': reportNotes,
       },
     );
+  }
+
+  @override
+  Future<SatelliteAnalysisEntity> runSatelliteAnalysis(
+    String taskId, {
+    bool forceRefresh = true,
+    List<int>? snapshotBytes,
+  }) async {
+    if (snapshotBytes != null && snapshotBytes.isNotEmpty) {
+      final json = await _api.postMultipart(
+        '/api/Tasks/$taskId/satellite-analysis',
+        fields: <String, String>{'forceRefresh': '$forceRefresh'},
+        files: <http.MultipartFile>[
+          http.MultipartFile.fromBytes(
+            'Snapshot',
+            snapshotBytes,
+            filename: 'map-capture.png',
+            contentType: MediaType('image', 'png'),
+          ),
+        ],
+      );
+      return SatelliteAnalysisEntity.fromJson(json).withAbsoluteUrls(ApiConfig.baseUrl);
+    }
+
+    final json = await _api.post(
+      '/api/Tasks/$taskId/satellite-analysis',
+      body: <String, dynamic>{'forceRefresh': forceRefresh},
+      timeout: const Duration(seconds: 90),
+    );
+    return SatelliteAnalysisEntity.fromJson(json).withAbsoluteUrls(ApiConfig.baseUrl);
+  }
+
+  @override
+  Future<List<SatelliteAnalysisEntity>> getSatelliteHistory(String taskId) async {
+    final raw = await _api.get('/api/Tasks/$taskId/satellite-analysis/history');
+    return JsonMap.mapList(raw)
+        .map((m) => SatelliteAnalysisEntity.fromJson(m).withAbsoluteUrls(ApiConfig.baseUrl))
+        .toList();
   }
 
   String _stageLabel(TaskStatus status) {
